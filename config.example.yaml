@@ -1,0 +1,51 @@
+# forexbot configuration example.
+# Copy to config.yaml and edit. Used by: python -m forexbot live --config config.yaml
+
+# Execution venue: paper | mt5 | ninjatrader
+broker: paper
+
+symbol: EURUSD
+timeframe: M15          # M1 M5 M15 M30 H1 H4 D1
+
+# Strategy: ma_crossover | rsi_reversion  (single-position trend/momentum models)
+strategy: ma_crossover
+strategy_params:
+  fast: 10
+  slow: 30
+  atr_period: 14
+  atr_stop: 2.0         # stop distance = atr_stop * ATR
+  atr_target: 3.0       # target distance = atr_target * ATR
+
+# Risk / position sizing
+risk:
+  risk_per_trade: 0.01  # fraction of equity risked per trade (1%)
+  max_lots: 10.0
+  min_lots: 0.01
+  lot_step: 0.01
+  contract_size: 100000 # units per standard lot
+  max_open_positions: 1
+
+# Live engine loop
+engine:
+  history: 200          # bars pulled each poll
+  poll_seconds: 5
+  dry_run: true         # log intended orders without sending; pass --live to override
+
+# ---- Broker-specific options (only the selected broker's block is used) ----
+
+# broker_options for MT5 (requires `pip install MetaTrader5` on Windows + running terminal):
+# broker: mt5
+# broker_options:
+#   login: 12345678
+#   password: "your-password"
+#   server: "YourBroker-Demo"
+#   path: "C:/Program Files/MetaTrader 5/terminal64.exe"   # optional
+#   magic: 234000
+
+# broker_options for NinjaTrader 8 (enable Tools > Options > AT Interface):
+# broker: ninjatrader
+# broker_options:
+#   account: "Sim101"
+#   incoming_dir: "C:/Users/you/Documents/NinjaTrader 8/incoming"
+#   state_dir: "C:/Users/you/Documents/NinjaTrader 8"   # where a companion script writes positions.csv/account.csv
+#   data_dir: "C:/Users/you/Documents/NinjaTrader 8/export"  # NinjaScript OHLCV CSV exports (for bars)

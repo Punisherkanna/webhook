@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.env
+config.yaml
+.pytest_cache/
+.coverage
+htmlcov/
+# Generated/large market data (keep the small committed sample only)
+data/*.csv
+!data/EURUSD_M15.csv

@@ -1,0 +1,11 @@
+# Core runtime: the engine, backtester, indicators, and strategies use ONLY the
+# Python standard library + PyYAML. No numpy/pandas required.
+PyYAML>=6.0
+
+# --- Optional, broker-specific (install only what you need) ---
+# MetaTrader 5 live trading (Windows only, needs a running MT5 terminal):
+#   pip install MetaTrader5
+# NinjaTrader 8 uses a file-based ATI bridge — no extra Python package needed.
+
+# --- Development ---
+# pip install pytest
