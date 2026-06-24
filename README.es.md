@@ -97,6 +97,24 @@ Max drawdown:    2.58%
 > motor, no un sistema rentable. Valida siempre las estrategias con datos
 > históricos reales.
 
+### Gráfico de la curva de capital
+
+Añade `--plot RUTA` para guardar un gráfico de la curva de capital (azul), la
+marca de máximo histórico (verde discontinuo) y el drawdown (sombreado rojo):
+
+```bash
+# .svg usa un renderizador interno sin dependencias (no requiere paquetes extra)
+python -m forexbot backtest --data data/EURUSD_M15.csv --strategy macd_trend \
+    --plot equity.svg
+
+# .png requiere matplotlib (pip install matplotlib)
+python -m forexbot backtest --data data/EURUSD_M15.csv --strategy macd_trend \
+    --plot equity.png
+```
+
+El formato se elige según la extensión del archivo. El SVG funciona sin
+instalar nada; el PNG solo hace falta si quieres una imagen rasterizada.
+
 ## Trading en vivo / papel
 
 ```bash

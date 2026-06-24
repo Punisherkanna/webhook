@@ -94,6 +94,24 @@ Max drawdown:    2.58%
 > The committed dataset is **synthetic** — results demonstrate the engine, not a
 > profitable system. Always validate strategies on real historical data.
 
+### Equity-curve plot
+
+Add `--plot PATH` to save a chart of the equity curve (blue), high-water mark
+(dashed green), and drawdown (red shading):
+
+```bash
+# .svg uses a built-in zero-dependency renderer (no extra packages)
+python -m forexbot backtest --data data/EURUSD_M15.csv --strategy macd_trend \
+    --plot equity.svg
+
+# .png requires matplotlib (pip install matplotlib)
+python -m forexbot backtest --data data/EURUSD_M15.csv --strategy macd_trend \
+    --plot equity.png
+```
+
+The format is chosen from the file extension. SVG works out of the box; PNG is
+only needed if you specifically want a raster image.
+
 ## Live / paper trading
 
 ```bash

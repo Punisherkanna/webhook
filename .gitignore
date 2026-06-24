@@ -14,3 +14,6 @@ htmlcov/
 # Generated/large market data (keep the small committed sample only)
 data/*.csv
 !data/EURUSD_M15.csv
+# Generated equity-curve plots
+*.svg
+*.png

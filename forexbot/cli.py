@@ -65,6 +65,11 @@ def cmd_backtest(args) -> int:
     print(f"\n=== Backtest: {strategy_name} on {symbol} "
           f"({len(bars)} bars) ===")
     print(result.summary())
+
+    if args.plot:
+        from .backtest.plot import save_equity_plot
+        out = save_equity_plot(result, args.plot)
+        print(f"\nEquity curve saved to {out}")
     return 0
 
 
@@ -95,6 +100,9 @@ def build_parser() -> argparse.ArgumentParser:
     bt.add_argument("--spread", type=float, default=0.8, help="spread in pips")
     bt.add_argument("--commission", type=float, default=7.0, help="per lot per side")
     bt.add_argument("--risk", type=float, default=0.01, help="risk per trade (0-1)")
+    bt.add_argument("--plot", metavar="PATH",
+                    help="save equity-curve chart to PATH (.svg needs no deps; "
+                         ".png needs matplotlib)")
     bt.set_defaults(func=cmd_backtest)
 
     live = sub.add_parser("live", help="run the live/paper trading engine")

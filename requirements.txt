@@ -6,6 +6,8 @@ PyYAML>=6.0
 # MetaTrader 5 live trading (Windows only, needs a running MT5 terminal):
 #   pip install MetaTrader5
 # NinjaTrader 8 uses a file-based ATI bridge — no extra Python package needed.
+# PNG equity-curve plots (the built-in .svg renderer needs nothing):
+#   pip install matplotlib
 
 # --- Development ---
 # pip install pytest

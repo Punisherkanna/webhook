@@ -12,6 +12,7 @@ dependencies = ["PyYAML>=6.0"]
 
 [project.optional-dependencies]
 mt5 = ["MetaTrader5>=5.0"]
+plot = ["matplotlib>=3.5"]   # only needed for PNG plots; SVG needs nothing
 dev = ["pytest>=7.0"]
 
 [project.scripts]
