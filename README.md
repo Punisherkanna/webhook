@@ -143,6 +143,11 @@ broker_options:
 The adapter maps timeframe strings to MT5 constants, pulls rates via
 `copy_rates_from_pos`, and submits market orders with attached SL/TP.
 
+**Windows one-click launchers:** double-click scripts in
+[`scripts/windows/`](scripts/windows/) — `install.bat`, `run_dry.bat`,
+`run_live.bat`, `backtest.bat` — to install deps and run the bot without typing
+commands.
+
 ### NinjaTrader 8
 
 NinjaTrader has no official Python SDK, so this adapter drives its supported

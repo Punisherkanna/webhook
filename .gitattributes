@@ -1,0 +1,6 @@
+# Windows batch scripts must use CRLF line endings to run correctly.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Keep everything else with normalized LF.
+* text=auto eol=lf

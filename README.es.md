@@ -147,6 +147,19 @@ El adaptador asigna las cadenas de temporalidad a las constantes de MT5, obtiene
 las cotizaciones con `copy_rates_from_pos` y envía órdenes de mercado con SL/TP
 adjuntos.
 
+#### Lanzadores rápidos para Windows (doble clic)
+
+Para no escribir comandos, usa los scripts `.bat` de [`scripts/windows/`](scripts/windows/):
+
+1. **`install.bat`** — instala las dependencias y el conector `MetaTrader5`.
+2. Copia `config.example.yaml` a `config.yaml` y rellena `login`, `password` y `server`.
+3. Abre el terminal MT5 con **AutoTrading** activado.
+4. **`run_dry.bat`** — prueba en seco (no envía órdenes).
+5. **`run_live.bat`** — en vivo, envía órdenes reales (pide confirmación).
+
+También hay **`backtest.bat`** para correr un backtest y generar `equity.svg`.
+Detalles en [`scripts/windows/README.md`](scripts/windows/README.md).
+
 ### NinjaTrader 8
 
 NinjaTrader no tiene un SDK oficial de Python, por lo que este adaptador usa su
