@@ -9,12 +9,18 @@ from __future__ import annotations
 from typing import Dict, Type
 
 from ..core.strategy import Strategy
+from .bollinger_breakout import BollingerBreakout
+from .donchian_breakout import DonchianBreakout
 from .ma_crossover import MACrossover
+from .macd_trend import MACDTrend
 from .rsi_reversion import RSIReversion
 
 REGISTRY: Dict[str, Type[Strategy]] = {
     "ma_crossover": MACrossover,
     "rsi_reversion": RSIReversion,
+    "donchian_breakout": DonchianBreakout,
+    "macd_trend": MACDTrend,
+    "bollinger_breakout": BollingerBreakout,
 }
 
 
@@ -27,4 +33,7 @@ def get_strategy(name: str) -> Type[Strategy]:
         )
 
 
-__all__ = ["MACrossover", "RSIReversion", "REGISTRY", "get_strategy"]
+__all__ = [
+    "MACrossover", "RSIReversion", "DonchianBreakout", "MACDTrend",
+    "BollingerBreakout", "REGISTRY", "get_strategy",
+]

@@ -7,7 +7,8 @@ broker: paper
 symbol: EURUSD
 timeframe: M15          # M1 M5 M15 M30 H1 H4 D1
 
-# Strategy: ma_crossover | rsi_reversion  (single-position trend/momentum models)
+# Strategy: ma_crossover | rsi_reversion | donchian_breakout | macd_trend |
+#           bollinger_breakout   (single-position trend/momentum models)
 strategy: ma_crossover
 strategy_params:
   fast: 10

@@ -24,13 +24,35 @@ interface, so switching venues is a one-line config change.
 - **Tested**: 34 unit tests covering indicators, risk, backtest fills,
   strategies, the live engine, and the NinjaTrader bridge.
 
+## Strategies
+
+All are single-position trend/momentum models with ATR-based protective stops —
+no grid, hedging, HFT, or martingale logic.
+
+| Name                 | Type            | Idea                                                        |
+|----------------------|-----------------|-------------------------------------------------------------|
+| `ma_crossover`       | Trend           | Fast SMA crosses the slow SMA.                              |
+| `rsi_reversion`      | Mean-reversion  | RSI exits oversold/overbought.                              |
+| `donchian_breakout`  | Breakout        | Price breaks the prior N-bar high/low (Turtle-style).      |
+| `macd_trend`         | Trend           | MACD/signal cross, filtered by a slow-EMA trend direction. |
+| `bollinger_breakout` | Breakout        | Close pushes outside a Bollinger Band.                      |
+
+```bash
+python -m forexbot backtest --data data/EURUSD_M15.csv --strategy donchian_breakout
+python -m forexbot backtest --data data/EURUSD_M15.csv --strategy macd_trend
+python -m forexbot backtest --data data/EURUSD_M15.csv --strategy bollinger_breakout
+```
+
+> Spanish docs: see [README.es.md](README.es.md).
+
 ## Project layout
 
 ```
 forexbot/
   core/        models, Broker & Strategy interfaces, risk manager, live engine
   indicators/  pure-Python SMA, EMA, RSI, ATR
-  strategies/  ma_crossover, rsi_reversion (+ registry)
+  strategies/  ma_crossover, rsi_reversion, donchian_breakout, macd_trend,
+               bollinger_breakout (+ registry)
   backtest/    event-driven engine + CSV data loader
   brokers/     paper, mt5_broker, ninjatrader_broker
   config.py    YAML -> typed config
