@@ -68,6 +68,15 @@ input group "Bollinger breakout"
 input int    InpBbPeriod = 20;  // Periodo de las bandas
 input double InpBbStd    = 2.0; // Desviaciones estandar
 
+input group "Proteccion (prop firm)"
+input bool   InpUseProtection   = true;  // Activar limites de proteccion
+input double InpMaxFloatDDPct    = 1.9;  // Max DD de PnL flotante POR SIMBOLO (%)
+input double InpMaxDailyDDPct    = 3.99; // Max DD diario (%)
+input double InpMaxTotalDDPct    = 10.0; // Max DD total (%)
+input bool   InpHaltDayOnFloat   = true; // Tras cortar por flotante, pausar el dia
+input bool   InpAlertOnBreach    = true; // Avisar (Alert) al violar un limite
+input bool   InpResetGuard       = false;// Reiniciar contadores (nuevo desafio)
+
 input group "Panel visual"
 input bool             InpShowPanel   = true;             // Mostrar panel
 input int              InpPanelX      = 20;               // Posicion X (px)
@@ -81,6 +90,7 @@ input color            InpAccent      = C'0,184,148';     // Color de acento
 #define COL_MUT C'140,146,166'
 #define COL_GRN C'38,194,129'
 #define COL_RED C'235,77,75'
+#define COL_AMB C'240,180,40'
 #define COL_SEP C'46,49,68'
 
 //============================ Estado global ========================
@@ -95,6 +105,17 @@ int h_rsi   = INVALID_HANDLE;
 int h_macd  = INVALID_HANDLE;
 int h_trend = INVALID_HANDLE;
 int h_bands = INVALID_HANDLE;
+
+//--- Estado de proteccion (persistido en variables globales del terminal)
+double   g_refBalance     = 0.0;   // capital de referencia para el DD total
+double   g_dayStartEquity = 0.0;   // equity al inicio del dia (DD diario)
+datetime g_day            = 0;     // dia actual anclado
+bool     g_haltTotal      = false; // bloqueo permanente por DD total
+bool     g_haltDaily      = false; // bloqueo del dia por DD diario / flotante
+string   g_gvRef, g_gvDay, g_gvDayEq, g_gvHalt; // nombres de variables globales
+
+//--- Ultimos valores de proteccion (para el panel)
+double g_floatDDpct = 0.0, g_dailyDDpct = 0.0, g_totalDDpct = 0.0;
 
 //+------------------------------------------------------------------+
 //| Utilidad: leer un valor de un buffer de indicador (serie)        |
@@ -181,6 +202,8 @@ int OnInit()
 
    PrintFormat("forexbot iniciado: estrategia=%d  simbolo=%s  TF=%d",
                InpStrategy, _Symbol, g_tf);
+
+   InitGuard();
 
    CreatePanel();
    UpdatePanel();
@@ -423,6 +446,176 @@ void OpenTrade(ENUM_SIGNAL sig)
                   g_trade.ResultRetcode(), g_trade.ResultRetcodeDescription());
   }
 
+//============================ Proteccion (prop firm) ===============
+//  Tres cortacircuitos, todos configurables por parametro:
+//   1) DD del PnL flotante POR SIMBOLO  -> cierra las posiciones del simbolo
+//   2) DD diario (equity vs inicio del dia) -> cierra todo y pausa el dia
+//   3) DD total (equity vs capital de referencia) -> cierra todo y detiene
+//  El equity de inicio de dia y el capital de referencia se PERSISTEN en
+//  variables globales del terminal, para sobrevivir reinicios de MT5.
+//-------------------------------------------------------------------
+datetime TodayStart()
+  {
+   MqlDateTime dt;
+   TimeToStruct(TimeCurrent(), dt);
+   dt.hour = 0; dt.min = 0; dt.sec = 0;
+   return StructToTime(dt);
+  }
+
+void AnchorDay(datetime today)
+  {
+   g_day = today;
+   g_dayStartEquity = AccountInfoDouble(ACCOUNT_EQUITY);
+   g_haltDaily = false;
+   GlobalVariableSet(g_gvDay,   (double)today);
+   GlobalVariableSet(g_gvDayEq, g_dayStartEquity);
+  }
+
+void InitGuard()
+  {
+   if(!InpUseProtection)
+      return;
+   long acct = (long)AccountInfoInteger(ACCOUNT_LOGIN);
+   string base = PFX + "guard_" + IntegerToString(acct) + "_"
+               + IntegerToString(InpMagic) + "_";
+   g_gvRef   = base + "ref";
+   g_gvDay   = base + "day";
+   g_gvDayEq = base + "dayeq";
+   g_gvHalt  = base + "halt";
+
+   if(InpResetGuard)
+     {
+      GlobalVariableDel(g_gvRef);  GlobalVariableDel(g_gvDay);
+      GlobalVariableDel(g_gvDayEq);GlobalVariableDel(g_gvHalt);
+      Print("PROTECCION: contadores reiniciados (nuevo desafio)");
+     }
+
+   double bal = AccountInfoDouble(ACCOUNT_BALANCE);
+
+   // Capital de referencia (DD total): se fija una sola vez por desafio.
+   if(GlobalVariableCheck(g_gvRef))
+      g_refBalance = GlobalVariableGet(g_gvRef);
+   else
+     {
+      g_refBalance = bal;
+      GlobalVariableSet(g_gvRef, g_refBalance);
+     }
+
+   g_haltTotal = (GlobalVariableCheck(g_gvHalt) && GlobalVariableGet(g_gvHalt) > 0.5);
+
+   // Ancla del dia / equity de inicio de dia.
+   datetime today = TodayStart();
+   if(GlobalVariableCheck(g_gvDay) && (datetime)GlobalVariableGet(g_gvDay) == today
+      && GlobalVariableCheck(g_gvDayEq))
+     {
+      g_day = today;
+      g_dayStartEquity = GlobalVariableGet(g_gvDayEq);
+     }
+   else
+      AnchorDay(today);
+
+   PrintFormat("PROTECCION activa: flot/simbolo=%.2f%%  diario=%.2f%%  total=%.2f%%  ref=%.2f",
+               InpMaxFloatDDPct, InpMaxDailyDDPct, InpMaxTotalDDPct, g_refBalance);
+  }
+
+//--- PnL flotante de las posiciones de este EA en ESTE simbolo
+double SymbolFloatingPnl()
+  {
+   double pnl = 0.0;
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+     {
+      ulong tk = PositionGetTicket(i);
+      if(!PositionSelectByTicket(tk)) continue;
+      if(PositionGetInteger(POSITION_MAGIC) != InpMagic) continue;
+      if(PositionGetString(POSITION_SYMBOL) != _Symbol) continue;
+      pnl += PositionGetDouble(POSITION_PROFIT) + PositionGetDouble(POSITION_SWAP);
+     }
+   return pnl;
+  }
+
+void CloseSymbolPositions()
+  {
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+     {
+      ulong tk = PositionGetTicket(i);
+      if(!PositionSelectByTicket(tk)) continue;
+      if(PositionGetInteger(POSITION_MAGIC) != InpMagic) continue;
+      if(PositionGetString(POSITION_SYMBOL) != _Symbol) continue;
+      g_trade.PositionClose(tk);
+     }
+  }
+
+void CloseAllMyPositions()
+  {
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+     {
+      ulong tk = PositionGetTicket(i);
+      if(!PositionSelectByTicket(tk)) continue;
+      if(PositionGetInteger(POSITION_MAGIC) != InpMagic) continue;
+      g_trade.PositionClose(tk);
+     }
+  }
+
+void Breach(string msg)
+  {
+   Print("PROTECCION: ", msg);
+   if(InpAlertOnBreach)
+      Alert(_Symbol + " forexbot - " + msg);
+  }
+
+//--- Guardian: se llama en cada tick. Devuelve true si se permite operar.
+bool RiskGuard()
+  {
+   datetime today = TodayStart();
+   if(today != g_day)
+      AnchorDay(today);                       // rollover de dia: re-ancla
+
+   double equity    = AccountInfoDouble(ACCOUNT_EQUITY);
+   double baseDay   = (g_dayStartEquity > 0.0 ? g_dayStartEquity : equity);
+   double baseTotal = (g_refBalance     > 0.0 ? g_refBalance     : equity);
+
+   double floatLimit = baseDay   * InpMaxFloatDDPct / 100.0;
+   double dailyLimit = baseDay   * InpMaxDailyDDPct / 100.0;
+   double totalLimit = baseTotal * InpMaxTotalDDPct / 100.0;
+
+   // 1) DD total (equity contra capital de referencia)
+   double totalDD = baseTotal - equity;
+   g_totalDDpct = (baseTotal > 0.0 ? MathMax(0.0, totalDD) / baseTotal * 100.0 : 0.0);
+   if(InpMaxTotalDDPct > 0.0 && totalDD >= totalLimit && !g_haltTotal)
+     {
+      g_haltTotal = true;
+      GlobalVariableSet(g_gvHalt, 1.0);
+      CloseAllMyPositions();
+      Breach(StringFormat("DD TOTAL %.2f%% (limite %.2f%%). Trading detenido.",
+                          g_totalDDpct, InpMaxTotalDDPct));
+     }
+
+   // 2) DD diario (equity contra equity de inicio de dia)
+   double dailyDD = g_dayStartEquity - equity;
+   g_dailyDDpct = (baseDay > 0.0 ? MathMax(0.0, dailyDD) / baseDay * 100.0 : 0.0);
+   if(InpMaxDailyDDPct > 0.0 && dailyDD >= dailyLimit && !g_haltDaily)
+     {
+      g_haltDaily = true;
+      CloseAllMyPositions();
+      Breach(StringFormat("DD DIARIO %.2f%% (limite %.2f%%). Pausa hasta manana.",
+                          g_dailyDDpct, InpMaxDailyDDPct));
+     }
+
+   // 3) DD de PnL flotante POR SIMBOLO
+   double fpnl = SymbolFloatingPnl();
+   g_floatDDpct = (baseDay > 0.0 && fpnl < 0.0 ? (-fpnl) / baseDay * 100.0 : 0.0);
+   if(InpMaxFloatDDPct > 0.0 && fpnl < 0.0 && fpnl <= -floatLimit)
+     {
+      CloseSymbolPositions();
+      Breach(StringFormat("DD FLOTANTE %s %.2f%% (limite %.2f%%). Posiciones cerradas.",
+                          _Symbol, g_floatDDpct, InpMaxFloatDDPct));
+      if(InpHaltDayOnFloat)
+         g_haltDaily = true;
+     }
+
+   return !(g_haltTotal || g_haltDaily);
+  }
+
 //============================ Panel visual =========================
 string StratName()
   {
@@ -599,10 +792,21 @@ void PGradient(int x, int y, int w, int h)
 
 string g_keys[9] = {"sym","bias","risk","pos","fpnl","trades","realized","balance","equity"};
 
+color DDColor(double used, double limit)
+  {
+   if(limit <= 0.0) return COL_MUT;
+   double r = used / limit;
+   if(r >= 1.0) return COL_RED;
+   if(r >= 0.5) return COL_AMB;
+   return COL_GRN;
+  }
+
 void CreatePanel()
   {
    if(!InpShowPanel) return;
-   int X = InpPanelX, Y = InpPanelY, W = 268, pad = 14, H = 304;
+   int X = InpPanelX, Y = InpPanelY, W = 268, pad = 14, rowH = 25;
+   bool prot = InpUseProtection;
+   int H = prot ? 416 : 304;
 
    PGradient(X, Y, W, H);
    PRect("lbar", X, Y, 3, H, InpAccent);          // barra de acento izquierda
@@ -616,7 +820,7 @@ void CreatePanel()
 
    string caps[9] = {"Simbolo","Senal","Riesgo","Posicion","PnL flotante",
                      "Operaciones","P/L total","Balance","Equity"};
-   int y0 = Y + 66, rowH = 25;
+   int y0 = Y + 66;
    for(int i = 0; i < 9; i++)
      {
       int ry = y0 + i * rowH;
@@ -626,6 +830,27 @@ void CreatePanel()
              ANCHOR_RIGHT_UPPER);
       if(i < 8)
          PRect("rs" + (string)i, X + pad, ry + rowH - 4, W - 2 * pad, 1, COL_SEP);
+     }
+
+   if(prot)
+     {
+      int yp = y0 + 9 * rowH;
+      PRect("psep", X + pad, yp - 2, W - 2 * pad, 1, COL_SEP);
+      PLabel("psec", X + pad, yp + 12, "PROTECCION (prop firm)", InpAccent, 8,
+             "Arial Black", ANCHOR_LEFT_UPPER);
+      string pcaps[4] = {"Estado","DD flotante","DD diario","DD total"};
+      string pkeys[4] = {"state","fdd","ddd","tdd"};
+      int yp0 = yp + 32;
+      for(int j = 0; j < 4; j++)
+        {
+         int ry = yp0 + j * rowH;
+         PLabel("c_" + pkeys[j], X + pad, ry, pcaps[j], COL_MUT, 9, "Segoe UI",
+                ANCHOR_LEFT_UPPER);
+         PLabel("v_" + pkeys[j], X + W - pad, ry, "—", COL_TXT, 9, "Segoe UI",
+                ANCHOR_RIGHT_UPPER);
+         if(j < 3)
+            PRect("prs" + (string)j, X + pad, ry + rowH - 4, W - 2 * pad, 1, COL_SEP);
+        }
      }
    ChartRedraw();
   }
@@ -659,6 +884,21 @@ void UpdatePanel()
    PSet("realized", StringFormat("%.2f %s", realized, ccy), rc);
    PSet("balance",  StringFormat("%.2f %s", bal, ccy), COL_TXT);
    PSet("equity",   StringFormat("%.2f %s", eq, ccy), COL_TXT);
+
+   if(InpUseProtection)
+     {
+      string st; color sc;
+      if(g_haltTotal)      { st = "DETENIDO";  sc = COL_RED; }
+      else if(g_haltDaily) { st = "PAUSA DIA"; sc = COL_AMB; }
+      else                 { st = "ACTIVO";    sc = COL_GRN; }
+      PSet("state", st, sc);
+      PSet("fdd", StringFormat("%.2f / %.2f %%", g_floatDDpct, InpMaxFloatDDPct),
+           DDColor(g_floatDDpct, InpMaxFloatDDPct));
+      PSet("ddd", StringFormat("%.2f / %.2f %%", g_dailyDDpct, InpMaxDailyDDPct),
+           DDColor(g_dailyDDpct, InpMaxDailyDDPct));
+      PSet("tdd", StringFormat("%.2f / %.2f %%", g_totalDDpct, InpMaxTotalDDPct),
+           DDColor(g_totalDDpct, InpMaxTotalDDPct));
+     }
    ChartRedraw();
   }
 
@@ -672,11 +912,18 @@ void OnTimer()
 //+------------------------------------------------------------------+
 void OnTick()
   {
+   bool canTrade = true;
+   if(InpUseProtection)
+      canTrade = RiskGuard();     // chequea/aplica limites cada tick
+
    if(InpShowPanel)
       UpdatePanel();              // refresco en vivo en cada tick
 
    if(InpNewBarOnly && !IsNewBar())
       return;
+
+   if(!canTrade)
+      return;                                      // bloqueado por proteccion
 
    if(CountMyPositions() >= InpMaxPositions)
       return;                                      // ya hay una posicion abierta
