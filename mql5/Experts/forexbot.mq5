@@ -82,6 +82,8 @@ input double InpMaxDailyDDPct    = 3.99; // Max DD diario (%)
 input double InpMaxTotalDDPct    = 10.0; // Max DD total (%)
 input ENUM_DAILY_BASE InpDailyBase = DAILY_BASE_DAY_BALANCE; // Base del DD diario/flotante
 input double InpSafetyMarginPct  = 10.0; // Margen de seguridad (% del limite)
+input double InpDailyProfitTarget = 100.0; // Objetivo de profit diario (moneda; 0=off)
+input bool   InpCloseOnTarget     = true;  // Cerrar posiciones al lograr el objetivo
 input bool   InpHaltDayOnFloat   = true; // Tras cortar por flotante, pausar el dia
 input bool   InpAlertOnBreach    = true; // Avisar (Alert) al violar un limite
 input bool   InpResetGuard       = false;// Reiniciar contadores (nuevo desafio)
@@ -126,6 +128,8 @@ string   g_gvRef, g_gvDay, g_gvDayBal, g_gvDayEq, g_gvHalt; // variables globale
 
 //--- Ultimos valores de proteccion (para el panel)
 double g_floatDDpct = 0.0, g_dailyDDpct = 0.0, g_totalDDpct = 0.0;
+double g_dayProfit  = 0.0;   // profit del dia (equity - balance inicio de dia)
+bool   g_targetHit  = false; // objetivo de profit diario alcanzado
 
 //+------------------------------------------------------------------+
 //| Utilidad: leer un valor de un buffer de indicador (serie)        |
@@ -624,6 +628,19 @@ bool RiskGuard()
                           g_dailyDDpct, InpMaxDailyDDPct * keep, InpMaxDailyDDPct));
      }
 
+   // 2b) Objetivo de profit diario: asegura la ganancia y pausa el dia.
+   double dayBase   = (g_dayStartBalance > 0.0 ? g_dayStartBalance : baseTotal);
+   g_dayProfit = equity - dayBase;
+   g_targetHit = (InpDailyProfitTarget > 0.0 && g_dayProfit >= InpDailyProfitTarget);
+   if(g_targetHit && !g_haltDaily)
+     {
+      g_haltDaily = true;
+      if(InpCloseOnTarget)
+         CloseAllMyPositions();
+      Breach(StringFormat("OBJETIVO DIARIO +%.2f (meta %.2f). Pausa hasta manana.",
+                          g_dayProfit, InpDailyProfitTarget));
+     }
+
    // 3) DD de PnL flotante POR SIMBOLO
    double fpnl = SymbolFloatingPnl();
    g_floatDDpct = (baseDay > 0.0 && fpnl < 0.0 ? (-fpnl) / baseDay * 100.0 : 0.0);
@@ -829,7 +846,7 @@ void CreatePanel()
    if(!InpShowPanel) return;
    int X = InpPanelX, Y = InpPanelY, W = 268, pad = 14, rowH = 25;
    bool prot = InpUseProtection;
-   int H = prot ? 416 : 304;
+   int H = prot ? 441 : 304;
 
    PGradient(X, Y, W, H);
    PRect("lbar", X, Y, 3, H, InpAccent);          // barra de acento izquierda
@@ -862,17 +879,17 @@ void CreatePanel()
       PLabel("psec", X + pad, yp + 12,
              "PROTECCION  -  margen " + DoubleToString(InpSafetyMarginPct, 1) + "%",
              InpAccent, 8, "Arial Black", ANCHOR_LEFT_UPPER);
-      string pcaps[4] = {"Estado","DD flotante","DD diario","DD total"};
-      string pkeys[4] = {"state","fdd","ddd","tdd"};
+      string pcaps[5] = {"Estado","Profit hoy","DD flotante","DD diario","DD total"};
+      string pkeys[5] = {"state","dprofit","fdd","ddd","tdd"};
       int yp0 = yp + 32;
-      for(int j = 0; j < 4; j++)
+      for(int j = 0; j < 5; j++)
         {
          int ry = yp0 + j * rowH;
          PLabel("c_" + pkeys[j], X + pad, ry, pcaps[j], COL_MUT, 9, "Segoe UI",
                 ANCHOR_LEFT_UPPER);
          PLabel("v_" + pkeys[j], X + W - pad, ry, "—", COL_TXT, 9, "Segoe UI",
                 ANCHOR_RIGHT_UPPER);
-         if(j < 3)
+         if(j < 4)
             PRect("prs" + (string)j, X + pad, ry + rowH - 4, W - 2 * pad, 1, COL_SEP);
         }
      }
@@ -912,9 +929,10 @@ void UpdatePanel()
    if(InpUseProtection)
      {
       string st; color sc;
-      if(g_haltTotal)      { st = "DETENIDO";  sc = COL_RED; }
-      else if(g_haltDaily) { st = "PAUSA DIA"; sc = COL_AMB; }
-      else                 { st = "ACTIVO";    sc = COL_GRN; }
+      if(g_haltTotal)       { st = "DETENIDO";    sc = COL_RED; }
+      else if(g_targetHit)  { st = "OBJETIVO OK"; sc = COL_GRN; }
+      else if(g_haltDaily)  { st = "PAUSA DIA";   sc = COL_AMB; }
+      else                  { st = "ACTIVO";      sc = COL_GRN; }
       // Limites EFECTIVOS (de corte) = nominal * (1 - margen).
       double keep = 1.0 - InpSafetyMarginPct / 100.0;
       if(keep < 0.0) keep = 0.0;
@@ -922,6 +940,13 @@ void UpdatePanel()
       double limD = InpMaxDailyDDPct * keep;
       double limT = InpMaxTotalDDPct * keep;
       PSet("state", st, sc);
+      string ccy2 = AccountInfoString(ACCOUNT_CURRENCY);
+      color  pcol = (g_dayProfit > 0.0) ? COL_GRN : (g_dayProfit < 0.0 ? COL_RED : COL_TXT);
+      if(InpDailyProfitTarget > 0.0)
+         PSet("dprofit", StringFormat("%.2f / %.0f %s", g_dayProfit,
+                                      InpDailyProfitTarget, ccy2), pcol);
+      else
+         PSet("dprofit", StringFormat("%.2f %s", g_dayProfit, ccy2), pcol);
       PSet("fdd", StringFormat("%.2f / %.2f %%", g_floatDDpct, limF),
            DDColor(g_floatDDpct, limF));
       PSet("ddd", StringFormat("%.2f / %.2f %%", g_dailyDDpct, limD),

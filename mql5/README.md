@@ -101,6 +101,8 @@ una prop firm. Todos los límites son parámetros (grupo *Protección*):
 | `InpMaxTotalDDPct`   | 10.0 %  | **DD total**: cierra todo y detiene.                                |
 | `InpDailyBase`       | Balance del día | Base del DD diario/flotante: balance de inicio de día o balance inicial fijo. |
 | `InpSafetyMarginPct` | 10.0 %  | **Margen de seguridad**: corta antes de tocar la regla real.        |
+| `InpDailyProfitTarget` | 100 USD | **Objetivo de profit diario** (moneda de la cuenta): al alcanzarlo, pausa el día. `0` lo desactiva. |
+| `InpCloseOnTarget`   | true    | Cerrar las posiciones del EA al lograr el objetivo (asegura la ganancia). |
 | `InpHaltDayOnFloat`  | true    | Tras cortar por flotante, pausar también el resto del día.          |
 | `InpAlertOnBreach`   | true    | Muestra un `Alert` de MT5 al violar un límite.                      |
 | `InpResetGuard`      | false   | Pon a `true` una vez para reiniciar contadores (nuevo desafío).     |
@@ -118,6 +120,11 @@ Cómo funciona:
   3.99% corta realmente en **3.59%**, el total de 10% en **9.0%** y el flotante de
   1.9% en **1.71%**. Así dejas un colchón para que el prop firm **no** cierre la
   cuenta por rozar la regla (slippage, gap, spread de cierre).
+- **Objetivo de profit diario** (`InpDailyProfitTarget`): el profit del día se mide
+  como `equity − balance de inicio de día`. Al alcanzar el objetivo (p. ej.
+  +100 USD), el EA **cierra las posiciones** (si `InpCloseOnTarget`) y **pausa
+  hasta el día siguiente**, asegurando la ganancia. El panel muestra
+  `Profit hoy` y el estado pasa a `OBJETIVO OK`.
 - **Floating DD por símbolo** se mide sobre el PnL flotante (profit + swap) de las
   posiciones de **este EA** en el símbolo del gráfico.
 - El balance/equity de inicio de día, el capital de referencia y el estado de
