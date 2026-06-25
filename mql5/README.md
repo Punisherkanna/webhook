@@ -84,6 +84,10 @@ Parámetros del grupo *Panel visual*:
 > propia de fondo, se puede añadir como recurso `OBJ_BITMAP_LABEL` — dímelo y lo
 > integro.
 
+Vista previa del diseño (referencia; el render real lo hace MT5):
+
+![Mockup del panel](docs/panel_mockup.svg)
+
 ## Presets de riesgo (.set)
 
 En [`presets/`](presets/) tienes 3 perfiles listos para cargar:
@@ -93,9 +97,11 @@ En [`presets/`](presets/) tienes 3 perfiles listos para cargar:
 | `forexbot_conservador.set`   | Bajo riesgo  | 0.5%       | 2.5 / 3.5         | MACD trend        |
 | `forexbot_medio.set`         | Equilibrado  | 1.0%       | 2.0 / 3.0         | MA crossover      |
 | `forexbot_agresivo.set`      | Agresivo     | 2.0%       | 1.5 / 4.0         | Donchian breakout |
+| `forexbot_xauusd.set`        | Oro (H1/H4)  | 1.0%       | 2.5 / 4.0         | Donchian breakout |
 
 Todos mantienen **1 sola posición** (sin grid/martingala). El "agresivo" arriesga
-más por operación y tiene mayor drawdown esperado.
+más por operación y tiene mayor drawdown esperado. El de **XAUUSD (oro)** usa un
+stop ATR más amplio y mayor `Deviation` por la volatilidad y el slippage del oro.
 
 **Cómo cargarlos:**
 - Al añadir el EA al gráfico, en la ventana de propiedades, pestaña **Entradas**

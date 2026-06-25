@@ -1,0 +1,32 @@
+; forexbot - Preset XAUUSD (ORO) - riesgo medio adaptado a alta volatilidad
+; Stop ATR mas amplio (2.5) y objetivo 4.0 para no salir por ruido del oro.
+; Estrategia Donchian breakout (el oro respeta bien las rupturas).
+; Deviation mayor (50) por el slippage tipico del oro. 1 posicion.
+; Recomendado en H1/H4. ADVERTENCIA: el oro mueve mucho dinero por lote;
+; usar SOLO en cuenta demo primero.
+; Cargar en MT5: pestana Inputs del EA o del Strategy Tester -> Load.
+InpStrategy=2
+InpTimeframe=0
+InpMagic=234000
+InpNewBarOnly=true
+InpDeviation=50
+InpComment=forexbot-xau
+InpRiskPerTrade=0.01
+InpMaxLots=3.0
+InpMaxPositions=1
+InpAtrPeriod=14
+InpAtrStop=2.5
+InpAtrTarget=4.0
+InpMaFast=10
+InpMaSlow=30
+InpRsiPeriod=14
+InpRsiOversold=30
+InpRsiOverbought=70
+InpDonchianPeriod=25
+InpMacdFast=12
+InpMacdSlow=26
+InpMacdSignal=9
+InpMacdTrendPeriod=100
+InpBbPeriod=20
+InpBbStd=2.0
+InpShowPanel=true

@@ -17,3 +17,5 @@ data/*.csv
 # Generated equity-curve plots
 *.svg
 *.png
+# ...but keep committed documentation assets
+!mql5/docs/panel_mockup.svg
