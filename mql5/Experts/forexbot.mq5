@@ -27,6 +27,13 @@ enum ENUM_STRATEGY
 
 enum ENUM_SIGNAL { SIG_NONE, SIG_LONG, SIG_SHORT };
 
+//--- Base de calculo del DD diario
+enum ENUM_DAILY_BASE
+  {
+   DAILY_BASE_DAY_BALANCE,   // Balance al inicio del dia (estandar)
+   DAILY_BASE_INITIAL        // Balance inicial fijo del desafio
+  };
+
 //============================ Parametros ============================
 input group "General"
 input ENUM_STRATEGY   InpStrategy        = STRAT_MA_CROSSOVER; // Estrategia
@@ -73,6 +80,8 @@ input bool   InpUseProtection   = true;  // Activar limites de proteccion
 input double InpMaxFloatDDPct    = 1.9;  // Max DD de PnL flotante POR SIMBOLO (%)
 input double InpMaxDailyDDPct    = 3.99; // Max DD diario (%)
 input double InpMaxTotalDDPct    = 10.0; // Max DD total (%)
+input ENUM_DAILY_BASE InpDailyBase = DAILY_BASE_DAY_BALANCE; // Base del DD diario/flotante
+input double InpSafetyMarginPct  = 10.0; // Margen de seguridad (% del limite)
 input bool   InpHaltDayOnFloat   = true; // Tras cortar por flotante, pausar el dia
 input bool   InpAlertOnBreach    = true; // Avisar (Alert) al violar un limite
 input bool   InpResetGuard       = false;// Reiniciar contadores (nuevo desafio)
@@ -107,12 +116,13 @@ int h_trend = INVALID_HANDLE;
 int h_bands = INVALID_HANDLE;
 
 //--- Estado de proteccion (persistido en variables globales del terminal)
-double   g_refBalance     = 0.0;   // capital de referencia para el DD total
-double   g_dayStartEquity = 0.0;   // equity al inicio del dia (DD diario)
-datetime g_day            = 0;     // dia actual anclado
-bool     g_haltTotal      = false; // bloqueo permanente por DD total
-bool     g_haltDaily      = false; // bloqueo del dia por DD diario / flotante
-string   g_gvRef, g_gvDay, g_gvDayEq, g_gvHalt; // nombres de variables globales
+double   g_refBalance      = 0.0;   // balance inicial (referencia del DD total)
+double   g_dayStartBalance = 0.0;   // balance al inicio del dia (DD diario)
+double   g_dayStartEquity  = 0.0;   // equity al inicio del dia (informativo)
+datetime g_day             = 0;     // dia actual anclado
+bool     g_haltTotal       = false; // bloqueo permanente por DD total
+bool     g_haltDaily       = false; // bloqueo del dia por DD diario / flotante
+string   g_gvRef, g_gvDay, g_gvDayBal, g_gvDayEq, g_gvHalt; // variables globales
 
 //--- Ultimos valores de proteccion (para el panel)
 double g_floatDDpct = 0.0, g_dailyDDpct = 0.0, g_totalDDpct = 0.0;
@@ -465,10 +475,12 @@ datetime TodayStart()
 void AnchorDay(datetime today)
   {
    g_day = today;
-   g_dayStartEquity = AccountInfoDouble(ACCOUNT_EQUITY);
+   g_dayStartBalance = AccountInfoDouble(ACCOUNT_BALANCE);
+   g_dayStartEquity  = AccountInfoDouble(ACCOUNT_EQUITY);
    g_haltDaily = false;
-   GlobalVariableSet(g_gvDay,   (double)today);
-   GlobalVariableSet(g_gvDayEq, g_dayStartEquity);
+   GlobalVariableSet(g_gvDay,    (double)today);
+   GlobalVariableSet(g_gvDayBal, g_dayStartBalance);
+   GlobalVariableSet(g_gvDayEq,  g_dayStartEquity);
   }
 
 void InitGuard()
@@ -478,15 +490,17 @@ void InitGuard()
    long acct = (long)AccountInfoInteger(ACCOUNT_LOGIN);
    string base = PFX + "guard_" + IntegerToString(acct) + "_"
                + IntegerToString(InpMagic) + "_";
-   g_gvRef   = base + "ref";
-   g_gvDay   = base + "day";
-   g_gvDayEq = base + "dayeq";
-   g_gvHalt  = base + "halt";
+   g_gvRef    = base + "ref";
+   g_gvDay    = base + "day";
+   g_gvDayBal = base + "daybal";
+   g_gvDayEq  = base + "dayeq";
+   g_gvHalt   = base + "halt";
 
    if(InpResetGuard)
      {
-      GlobalVariableDel(g_gvRef);  GlobalVariableDel(g_gvDay);
-      GlobalVariableDel(g_gvDayEq);GlobalVariableDel(g_gvHalt);
+      GlobalVariableDel(g_gvRef);   GlobalVariableDel(g_gvDay);
+      GlobalVariableDel(g_gvDayBal);GlobalVariableDel(g_gvDayEq);
+      GlobalVariableDel(g_gvHalt);
       Print("PROTECCION: contadores reiniciados (nuevo desafio)");
      }
 
@@ -506,10 +520,11 @@ void InitGuard()
    // Ancla del dia / equity de inicio de dia.
    datetime today = TodayStart();
    if(GlobalVariableCheck(g_gvDay) && (datetime)GlobalVariableGet(g_gvDay) == today
-      && GlobalVariableCheck(g_gvDayEq))
+      && GlobalVariableCheck(g_gvDayBal) && GlobalVariableCheck(g_gvDayEq))
      {
       g_day = today;
-      g_dayStartEquity = GlobalVariableGet(g_gvDayEq);
+      g_dayStartBalance = GlobalVariableGet(g_gvDayBal);
+      g_dayStartEquity  = GlobalVariableGet(g_gvDayEq);
      }
    else
       AnchorDay(today);
@@ -570,15 +585,23 @@ bool RiskGuard()
    if(today != g_day)
       AnchorDay(today);                       // rollover de dia: re-ancla
 
-   double equity    = AccountInfoDouble(ACCOUNT_EQUITY);
-   double baseDay   = (g_dayStartEquity > 0.0 ? g_dayStartEquity : equity);
-   double baseTotal = (g_refBalance     > 0.0 ? g_refBalance     : equity);
+   double equity = AccountInfoDouble(ACCOUNT_EQUITY);
+   // Bases: balance (no equity). Intradia = balance inicio de dia (o inicial fijo);
+   // total = balance inicial del desafio.
+   double baseTotal = (g_refBalance > 0.0 ? g_refBalance : AccountInfoDouble(ACCOUNT_BALANCE));
+   double baseDay   = (InpDailyBase == DAILY_BASE_INITIAL)
+                      ? baseTotal
+                      : (g_dayStartBalance > 0.0 ? g_dayStartBalance : baseTotal);
 
-   double floatLimit = baseDay   * InpMaxFloatDDPct / 100.0;
-   double dailyLimit = baseDay   * InpMaxDailyDDPct / 100.0;
-   double totalLimit = baseTotal * InpMaxTotalDDPct / 100.0;
+   // Margen de seguridad: corta antes de tocar la regla real.
+   double keep = 1.0 - InpSafetyMarginPct / 100.0;
+   if(keep < 0.0) keep = 0.0;
 
-   // 1) DD total (equity contra capital de referencia)
+   double floatLimit = baseDay   * (InpMaxFloatDDPct / 100.0) * keep;
+   double dailyLimit = baseDay   * (InpMaxDailyDDPct / 100.0) * keep;
+   double totalLimit = baseTotal * (InpMaxTotalDDPct / 100.0) * keep;
+
+   // 1) DD total (equity contra balance inicial)
    double totalDD = baseTotal - equity;
    g_totalDDpct = (baseTotal > 0.0 ? MathMax(0.0, totalDD) / baseTotal * 100.0 : 0.0);
    if(InpMaxTotalDDPct > 0.0 && totalDD >= totalLimit && !g_haltTotal)
@@ -586,19 +609,19 @@ bool RiskGuard()
       g_haltTotal = true;
       GlobalVariableSet(g_gvHalt, 1.0);
       CloseAllMyPositions();
-      Breach(StringFormat("DD TOTAL %.2f%% (limite %.2f%%). Trading detenido.",
-                          g_totalDDpct, InpMaxTotalDDPct));
+      Breach(StringFormat("DD TOTAL %.2f%% (corte %.2f%% de %.2f%%). Trading detenido.",
+                          g_totalDDpct, InpMaxTotalDDPct * keep, InpMaxTotalDDPct));
      }
 
-   // 2) DD diario (equity contra equity de inicio de dia)
-   double dailyDD = g_dayStartEquity - equity;
+   // 2) DD diario (equity contra balance de inicio de dia)
+   double dailyDD = baseDay - equity;
    g_dailyDDpct = (baseDay > 0.0 ? MathMax(0.0, dailyDD) / baseDay * 100.0 : 0.0);
    if(InpMaxDailyDDPct > 0.0 && dailyDD >= dailyLimit && !g_haltDaily)
      {
       g_haltDaily = true;
       CloseAllMyPositions();
-      Breach(StringFormat("DD DIARIO %.2f%% (limite %.2f%%). Pausa hasta manana.",
-                          g_dailyDDpct, InpMaxDailyDDPct));
+      Breach(StringFormat("DD DIARIO %.2f%% (corte %.2f%% de %.2f%%). Pausa hasta manana.",
+                          g_dailyDDpct, InpMaxDailyDDPct * keep, InpMaxDailyDDPct));
      }
 
    // 3) DD de PnL flotante POR SIMBOLO
@@ -607,8 +630,8 @@ bool RiskGuard()
    if(InpMaxFloatDDPct > 0.0 && fpnl < 0.0 && fpnl <= -floatLimit)
      {
       CloseSymbolPositions();
-      Breach(StringFormat("DD FLOTANTE %s %.2f%% (limite %.2f%%). Posiciones cerradas.",
-                          _Symbol, g_floatDDpct, InpMaxFloatDDPct));
+      Breach(StringFormat("DD FLOTANTE %s %.2f%% (corte %.2f%% de %.2f%%). Posiciones cerradas.",
+                          _Symbol, g_floatDDpct, InpMaxFloatDDPct * keep, InpMaxFloatDDPct));
       if(InpHaltDayOnFloat)
          g_haltDaily = true;
      }
@@ -836,8 +859,9 @@ void CreatePanel()
      {
       int yp = y0 + 9 * rowH;
       PRect("psep", X + pad, yp - 2, W - 2 * pad, 1, COL_SEP);
-      PLabel("psec", X + pad, yp + 12, "PROTECCION (prop firm)", InpAccent, 8,
-             "Arial Black", ANCHOR_LEFT_UPPER);
+      PLabel("psec", X + pad, yp + 12,
+             "PROTECCION  -  margen " + DoubleToString(InpSafetyMarginPct, 1) + "%",
+             InpAccent, 8, "Arial Black", ANCHOR_LEFT_UPPER);
       string pcaps[4] = {"Estado","DD flotante","DD diario","DD total"};
       string pkeys[4] = {"state","fdd","ddd","tdd"};
       int yp0 = yp + 32;
@@ -891,13 +915,19 @@ void UpdatePanel()
       if(g_haltTotal)      { st = "DETENIDO";  sc = COL_RED; }
       else if(g_haltDaily) { st = "PAUSA DIA"; sc = COL_AMB; }
       else                 { st = "ACTIVO";    sc = COL_GRN; }
+      // Limites EFECTIVOS (de corte) = nominal * (1 - margen).
+      double keep = 1.0 - InpSafetyMarginPct / 100.0;
+      if(keep < 0.0) keep = 0.0;
+      double limF = InpMaxFloatDDPct * keep;
+      double limD = InpMaxDailyDDPct * keep;
+      double limT = InpMaxTotalDDPct * keep;
       PSet("state", st, sc);
-      PSet("fdd", StringFormat("%.2f / %.2f %%", g_floatDDpct, InpMaxFloatDDPct),
-           DDColor(g_floatDDpct, InpMaxFloatDDPct));
-      PSet("ddd", StringFormat("%.2f / %.2f %%", g_dailyDDpct, InpMaxDailyDDPct),
-           DDColor(g_dailyDDpct, InpMaxDailyDDPct));
-      PSet("tdd", StringFormat("%.2f / %.2f %%", g_totalDDpct, InpMaxTotalDDPct),
-           DDColor(g_totalDDpct, InpMaxTotalDDPct));
+      PSet("fdd", StringFormat("%.2f / %.2f %%", g_floatDDpct, limF),
+           DDColor(g_floatDDpct, limF));
+      PSet("ddd", StringFormat("%.2f / %.2f %%", g_dailyDDpct, limD),
+           DDColor(g_dailyDDpct, limD));
+      PSet("tdd", StringFormat("%.2f / %.2f %%", g_totalDDpct, limT),
+           DDColor(g_totalDDpct, limT));
      }
    ChartRedraw();
   }

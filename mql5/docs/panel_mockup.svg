@@ -207,17 +207,17 @@
 <text x="44" y="300" fill="rgb(140,146,166)" font-size="12">Equity</text>
 <text x="284" y="300" fill="rgb(234,236,244)" font-size="12" font-weight="600" text-anchor="end">11383.20 USD</text>
 <rect x="44" y="319" width="240" height="1" fill="rgb(46,49,68)"/>
-<text x="44" y="339" fill="rgb(0,184,148)" font-size="11" font-weight="900">PROTECCION (prop firm)</text>
+<text x="44" y="339" fill="rgb(0,184,148)" font-size="11" font-weight="900">PROTECCION  -  margen 10.0%</text>
 <text x="44" y="359" fill="rgb(140,146,166)" font-size="12">Estado</text>
 <text x="284" y="359" fill="rgb(38,194,129)" font-size="12" font-weight="600" text-anchor="end">ACTIVO</text>
 <rect x="44" y="375" width="240" height="1" fill="rgb(46,49,68)"/>
 <text x="44" y="384" fill="rgb(140,146,166)" font-size="12">DD flotante</text>
-<text x="284" y="384" fill="rgb(38,194,129)" font-size="12" font-weight="600" text-anchor="end">0.42 / 1.90 %</text>
+<text x="284" y="384" fill="rgb(38,194,129)" font-size="12" font-weight="600" text-anchor="end">0.42 / 1.71 %</text>
 <rect x="44" y="400" width="240" height="1" fill="rgb(46,49,68)"/>
 <text x="44" y="409" fill="rgb(140,146,166)" font-size="12">DD diario</text>
-<text x="284" y="409" fill="rgb(240,180,40)" font-size="12" font-weight="600" text-anchor="end">2.10 / 3.99 %</text>
+<text x="284" y="409" fill="rgb(240,180,40)" font-size="12" font-weight="600" text-anchor="end">1.95 / 3.59 %</text>
 <rect x="44" y="425" width="240" height="1" fill="rgb(46,49,68)"/>
 <text x="44" y="434" fill="rgb(140,146,166)" font-size="12">DD total</text>
-<text x="284" y="434" fill="rgb(38,194,129)" font-size="12" font-weight="600" text-anchor="end">3.80 / 10.00 %</text>
+<text x="284" y="434" fill="rgb(38,194,129)" font-size="12" font-weight="600" text-anchor="end">3.40 / 9.00 %</text>
 <text x="904" y="506" fill="rgb(80,86,104)" font-size="11" text-anchor="end">forexbot — mockup del panel (referencia de diseno)</text>
 </svg>

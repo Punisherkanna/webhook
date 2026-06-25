@@ -97,33 +97,41 @@ una prop firm. Todos los límites son parámetros (grupo *Protección*):
 |----------------------|--------:|---------------------------------------------------------------------|
 | `InpUseProtection`   | true    | Activa/desactiva toda la protección.                                |
 | `InpMaxFloatDDPct`   | 1.9 %   | **DD de PnL flotante por símbolo**: cierra las posiciones del símbolo. |
-| `InpMaxDailyDDPct`   | 3.99 %  | **DD diario** (equity vs inicio del día): cierra todo y pausa el día. |
-| `InpMaxTotalDDPct`   | 10.0 %  | **DD total** (equity vs capital de referencia): cierra todo y detiene. |
+| `InpMaxDailyDDPct`   | 3.99 %  | **DD diario**: cierra todo y pausa el día.                          |
+| `InpMaxTotalDDPct`   | 10.0 %  | **DD total**: cierra todo y detiene.                                |
+| `InpDailyBase`       | Balance del día | Base del DD diario/flotante: balance de inicio de día o balance inicial fijo. |
+| `InpSafetyMarginPct` | 10.0 %  | **Margen de seguridad**: corta antes de tocar la regla real.        |
 | `InpHaltDayOnFloat`  | true    | Tras cortar por flotante, pausar también el resto del día.          |
 | `InpAlertOnBreach`   | true    | Muestra un `Alert` de MT5 al violar un límite.                      |
 | `InpResetGuard`      | false   | Pon a `true` una vez para reiniciar contadores (nuevo desafío).     |
 
 Cómo funciona:
+- **Todos los DD se miden sobre BALANCE, no sobre equity** (como exigen casi todas
+  las prop firms):
+  - **DD total** → contra el **balance inicial** del desafío (capital de
+    referencia, fijado la primera vez que arrancas el EA).
+  - **DD diario** y **DD flotante** → contra el **balance de inicio del día**, que
+    se ancla automáticamente al cambiar de día. Con `InpDailyBase = Balance
+    inicial fijo` puedes basarlos en el balance inicial del desafío en su lugar.
+- **Margen de seguridad** (`InpSafetyMarginPct`): el EA corta en el límite
+  **efectivo = límite × (1 − margen)**. Ejemplo con margen 10%: el DD diario de
+  3.99% corta realmente en **3.59%**, el total de 10% en **9.0%** y el flotante de
+  1.9% en **1.71%**. Así dejas un colchón para que el prop firm **no** cierre la
+  cuenta por rozar la regla (slippage, gap, spread de cierre).
 - **Floating DD por símbolo** se mide sobre el PnL flotante (profit + swap) de las
-  posiciones de **este EA** en el símbolo del gráfico; al alcanzar el límite se
-  cierran esas posiciones.
-- **DD diario** se mide contra el **equity de inicio del día**, que se ancla
-  automáticamente al cambiar de día.
-- **DD total** se mide contra un **capital de referencia** que se fija la primera
-  vez que arrancas el EA (el balance en ese momento).
-- El equity de inicio de día, el capital de referencia y el estado de bloqueo se
-  **persisten en variables globales del terminal**, así que sobreviven a un
-  reinicio de MT5 (clave para no perder el conteo del DD diario).
-- Las bases de los porcentajes diario/flotante son el **equity de inicio de día**;
-  la del total es el **capital de referencia**.
+  posiciones de **este EA** en el símbolo del gráfico.
+- El balance/equity de inicio de día, el capital de referencia y el estado de
+  bloqueo se **persisten en variables globales del terminal**, así que sobreviven
+  a un reinicio de MT5 (clave para no perder el conteo del DD diario).
 
 > Para empezar un **nuevo desafío** (resetear el capital de referencia y el
 > bloqueo total), carga el EA una vez con `InpResetGuard = true` y vuelve a
 > ponerlo en `false`.
 
-El panel muestra en vivo, en su sección **PROTECCIÓN**, el estado
-(`ACTIVO` / `PAUSA DÍA` / `DETENIDO`) y cada DD como `uso / límite %` con color
-(verde → ámbar al pasar el 50% → rojo al alcanzarlo).
+El panel muestra en vivo, en su sección **PROTECCIÓN** (con el margen en el
+título), el estado (`ACTIVO` / `PAUSA DÍA` / `DETENIDO`) y cada DD como
+`uso / límite efectivo %` con color (verde → ámbar al pasar el 50% → rojo al
+alcanzar el corte). El "límite efectivo" ya incluye el margen de seguridad.
 
 ## Presets de riesgo (.set)
 
