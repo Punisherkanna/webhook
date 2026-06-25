@@ -11,6 +11,10 @@ interface, so switching venues is a one-line config change.
 > hedging, HFT, or martingale logic anywhere in this project — every entry takes
 > one position with a fixed, ATR-based protective stop.
 
+> **Prefer a native MT5 robot?** There's also a standalone MQL5 Expert Advisor
+> (same 5 strategies) you compile in MetaEditor and run inside MT5 with no Python
+> — see [`mql5/`](mql5/README.md).
+
 ## Highlights
 
 - **Zero heavy dependencies for the core.** Engine, backtester, indicators, and

@@ -14,6 +14,11 @@ la configuración.
 > proyecto — cada entrada abre una posición con un stop de protección fijo basado
 > en ATR.
 
+> **¿Prefieres un robot nativo de MT5?** También hay un Expert Advisor en MQL5
+> (las mismas 5 estrategias) que compilas en MetaEditor y ejecutas dentro de MT5
+> sin Python — mira [`mql5/`](mql5/README.md). Es la opción más sencilla si solo
+> quieres operar en MT5.
+
 > 🇬🇧 English documentation: see [README.md](README.md).
 
 ## Lo más destacado
