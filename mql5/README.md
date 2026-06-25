@@ -84,6 +84,27 @@ Parámetros del grupo *Panel visual*:
 > propia de fondo, se puede añadir como recurso `OBJ_BITMAP_LABEL` — dímelo y lo
 > integro.
 
+## Presets de riesgo (.set)
+
+En [`presets/`](presets/) tienes 3 perfiles listos para cargar:
+
+| Archivo                      | Perfil       | Riesgo/op. | ATR stop / target | Estrategia        |
+|------------------------------|--------------|-----------:|-------------------|-------------------|
+| `forexbot_conservador.set`   | Bajo riesgo  | 0.5%       | 2.5 / 3.5         | MACD trend        |
+| `forexbot_medio.set`         | Equilibrado  | 1.0%       | 2.0 / 3.0         | MA crossover      |
+| `forexbot_agresivo.set`      | Agresivo     | 2.0%       | 1.5 / 4.0         | Donchian breakout |
+
+Todos mantienen **1 sola posición** (sin grid/martingala). El "agresivo" arriesga
+más por operación y tiene mayor drawdown esperado.
+
+**Cómo cargarlos:**
+- Al añadir el EA al gráfico, en la ventana de propiedades, pestaña **Entradas**
+  → botón **Cargar (Load)** → elige el `.set`.
+- O en el **Probador de estrategias**, pestaña *Parámetros de entrada* → **Cargar**.
+
+> Puedes cargar un perfil y luego cambiar solo `InpStrategy` para aplicar ese
+> nivel de riesgo a otra estrategia. Empieza siempre en **demo**.
+
 ## Probar antes con el Strategy Tester (recomendado)
 
 Antes de operar en real, pruébalo con datos históricos:

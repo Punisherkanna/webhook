@@ -1,0 +1,30 @@
+; forexbot - Preset AGRESIVO
+; Riesgo 2% por operacion, stop mas ajustado y objetivo amplio (1.5/4.0 ATR).
+; Estrategia Donchian breakout (mas operaciones en tendencia). 1 posicion.
+; ADVERTENCIA: mayor riesgo y drawdown. Usar SOLO en cuenta demo primero.
+; Cargar en MT5: pestana Inputs del EA o del Strategy Tester -> Load.
+InpStrategy=2
+InpTimeframe=0
+InpMagic=234000
+InpNewBarOnly=true
+InpDeviation=20
+InpComment=forexbot-agr
+InpRiskPerTrade=0.02
+InpMaxLots=10.0
+InpMaxPositions=1
+InpAtrPeriod=14
+InpAtrStop=1.5
+InpAtrTarget=4.0
+InpMaFast=10
+InpMaSlow=30
+InpRsiPeriod=14
+InpRsiOversold=30
+InpRsiOverbought=70
+InpDonchianPeriod=20
+InpMacdFast=12
+InpMacdSlow=26
+InpMacdSignal=9
+InpMacdTrendPeriod=100
+InpBbPeriod=20
+InpBbStd=2.0
+InpShowPanel=true
