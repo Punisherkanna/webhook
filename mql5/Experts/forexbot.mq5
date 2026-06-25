@@ -68,6 +68,21 @@ input group "Bollinger breakout"
 input int    InpBbPeriod = 20;  // Periodo de las bandas
 input double InpBbStd    = 2.0; // Desviaciones estandar
 
+input group "Panel visual"
+input bool             InpShowPanel   = true;             // Mostrar panel
+input int              InpPanelX      = 20;               // Posicion X (px)
+input int              InpPanelY      = 30;               // Posicion Y (px)
+input ENUM_BASE_CORNER InpPanelCorner = CORNER_LEFT_UPPER;// Esquina de anclaje
+input color            InpAccent      = C'0,184,148';     // Color de acento
+
+//--- Paleta del panel (tema oscuro profesional)
+#define PFX     "fxbot_"
+#define COL_TXT C'234,236,244'
+#define COL_MUT C'140,146,166'
+#define COL_GRN C'38,194,129'
+#define COL_RED C'235,77,75'
+#define COL_SEP C'46,49,68'
+
 //============================ Estado global ========================
 CTrade        g_trade;
 ENUM_TIMEFRAMES g_tf;
@@ -166,6 +181,12 @@ int OnInit()
 
    PrintFormat("forexbot iniciado: estrategia=%d  simbolo=%s  TF=%d",
                InpStrategy, _Symbol, g_tf);
+
+   CreatePanel();
+   UpdatePanel();
+   if(InpShowPanel)
+      EventSetTimer(1);          // refresco del PnL flotante cada segundo
+
    return INIT_SUCCEEDED;
   }
 
@@ -178,6 +199,10 @@ void OnDeinit(const int reason)
    for(int i = 0; i < ArraySize(handles); i++)
       if(handles[i] != INVALID_HANDLE)
          IndicatorRelease(handles[i]);
+
+   EventKillTimer();
+   ObjectsDeleteAll(0, PFX);
+   ChartRedraw();
   }
 
 //+------------------------------------------------------------------+
@@ -398,11 +423,258 @@ void OpenTrade(ENUM_SIGNAL sig)
                   g_trade.ResultRetcode(), g_trade.ResultRetcodeDescription());
   }
 
+//============================ Panel visual =========================
+string StratName()
+  {
+   switch(InpStrategy)
+     {
+      case STRAT_MA_CROSSOVER:       return "MA Crossover";
+      case STRAT_RSI_REVERSION:      return "RSI Reversion";
+      case STRAT_DONCHIAN_BREAKOUT:  return "Donchian Breakout";
+      case STRAT_MACD_TREND:         return "MACD Trend";
+      case STRAT_BOLLINGER_BREAKOUT: return "Bollinger Breakout";
+     }
+   return "—";
+  }
+
+string TFString(ENUM_TIMEFRAMES tf)
+  {
+   string s = EnumToString(tf);
+   StringReplace(s, "PERIOD_", "");
+   return s;
+  }
+
+//--- "Bias" direccional actual (estado de los indicadores, no el cruce)
+ENUM_SIGNAL CurrentBias()
+  {
+   switch(InpStrategy)
+     {
+      case STRAT_MA_CROSSOVER:
+        {
+         double f = IndVal(h_fast, 0, 1), s = IndVal(h_slow, 0, 1);
+         if(!Valid(f) || !Valid(s)) return SIG_NONE;
+         return (f > s) ? SIG_LONG : SIG_SHORT;
+        }
+      case STRAT_RSI_REVERSION:
+        {
+         double r = IndVal(h_rsi, 0, 1);
+         if(!Valid(r)) return SIG_NONE;
+         if(r < InpRsiOversold)   return SIG_LONG;
+         if(r > InpRsiOverbought) return SIG_SHORT;
+         return SIG_NONE;
+        }
+      case STRAT_DONCHIAN_BREAKOUT:
+        {
+         int ih = iHighest(_Symbol, g_tf, MODE_HIGH, InpDonchianPeriod, 1);
+         int il = iLowest(_Symbol, g_tf, MODE_LOW, InpDonchianPeriod, 1);
+         if(ih < 0 || il < 0) return SIG_NONE;
+         double up = iHigh(_Symbol, g_tf, ih), lo = iLow(_Symbol, g_tf, il);
+         double c = iClose(_Symbol, g_tf, 1);
+         return (c >= (up + lo) / 2.0) ? SIG_LONG : SIG_SHORT;
+        }
+      case STRAT_MACD_TREND:
+        {
+         double m = IndVal(h_macd, 0, 1), g = IndVal(h_macd, 1, 1);
+         double tr = IndVal(h_trend, 0, 1);
+         if(!Valid(m) || !Valid(g) || !Valid(tr)) return SIG_NONE;
+         double c = iClose(_Symbol, g_tf, 1);
+         if(m > g && c > tr) return SIG_LONG;
+         if(m < g && c < tr) return SIG_SHORT;
+         return SIG_NONE;
+        }
+      case STRAT_BOLLINGER_BREAKOUT:
+        {
+         double u = IndVal(h_bands, 1, 1), l = IndVal(h_bands, 2, 1);
+         if(!Valid(u) || !Valid(l)) return SIG_NONE;
+         double c = iClose(_Symbol, g_tf, 1);
+         if(c > u) return SIG_LONG;
+         if(c < l) return SIG_SHORT;
+         return SIG_NONE;
+        }
+     }
+   return SIG_NONE;
+  }
+
+//--- PnL flotante de este EA + descripcion de la posicion abierta
+double FloatingPnl(string &posDesc)
+  {
+   double pnl = 0.0;
+   posDesc = "—";
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+     {
+      ulong tk = PositionGetTicket(i);
+      if(!PositionSelectByTicket(tk)) continue;
+      if(PositionGetInteger(POSITION_MAGIC) != InpMagic) continue;
+      if(PositionGetString(POSITION_SYMBOL) != _Symbol) continue;
+      pnl += PositionGetDouble(POSITION_PROFIT) + PositionGetDouble(POSITION_SWAP);
+      long   type = PositionGetInteger(POSITION_TYPE);
+      double vol  = PositionGetDouble(POSITION_VOLUME);
+      double op   = PositionGetDouble(POSITION_PRICE_OPEN);
+      posDesc = StringFormat("%s %.2f @ %s",
+                             (type == POSITION_TYPE_BUY ? "BUY" : "SELL"),
+                             vol, DoubleToString(op, _Digits));
+     }
+   return pnl;
+  }
+
+//--- Operaciones cerradas y P/L realizado total de este EA
+void HistoryStats(int &trades, double &realized)
+  {
+   trades = 0;
+   realized = 0.0;
+   if(!HistorySelect(0, TimeCurrent())) return;
+   int deals = HistoryDealsTotal();
+   for(int i = 0; i < deals; i++)
+     {
+      ulong t = HistoryDealGetTicket(i);
+      if(t == 0) continue;
+      if(HistoryDealGetInteger(t, DEAL_MAGIC) != InpMagic) continue;
+      if(HistoryDealGetString(t, DEAL_SYMBOL) != _Symbol) continue;
+      realized += HistoryDealGetDouble(t, DEAL_PROFIT)
+                + HistoryDealGetDouble(t, DEAL_SWAP)
+                + HistoryDealGetDouble(t, DEAL_COMMISSION);
+      if((ENUM_DEAL_ENTRY)HistoryDealGetInteger(t, DEAL_ENTRY) == DEAL_ENTRY_OUT)
+         trades++;
+     }
+  }
+
+//--- Helpers de objetos graficos -----------------------------------
+void PRect(string nm, int x, int y, int w, int h, color bg)
+  {
+   string n = PFX + nm;
+   if(ObjectFind(0, n) < 0) ObjectCreate(0, n, OBJ_RECTANGLE_LABEL, 0, 0, 0);
+   ObjectSetInteger(0, n, OBJPROP_CORNER, InpPanelCorner);
+   ObjectSetInteger(0, n, OBJPROP_XDISTANCE, x);
+   ObjectSetInteger(0, n, OBJPROP_YDISTANCE, y);
+   ObjectSetInteger(0, n, OBJPROP_XSIZE, w);
+   ObjectSetInteger(0, n, OBJPROP_YSIZE, h);
+   ObjectSetInteger(0, n, OBJPROP_BGCOLOR, bg);
+   ObjectSetInteger(0, n, OBJPROP_BORDER_TYPE, BORDER_FLAT);
+   ObjectSetInteger(0, n, OBJPROP_COLOR, bg);
+   ObjectSetInteger(0, n, OBJPROP_BACK, false);
+   ObjectSetInteger(0, n, OBJPROP_SELECTABLE, false);
+   ObjectSetInteger(0, n, OBJPROP_HIDDEN, true);
+  }
+
+void PLabel(string nm, int x, int y, string txt, color clr, int size,
+            string font, ENUM_ANCHOR_POINT anchor)
+  {
+   string n = PFX + nm;
+   if(ObjectFind(0, n) < 0) ObjectCreate(0, n, OBJ_LABEL, 0, 0, 0);
+   ObjectSetInteger(0, n, OBJPROP_CORNER, InpPanelCorner);
+   ObjectSetInteger(0, n, OBJPROP_ANCHOR, anchor);
+   ObjectSetInteger(0, n, OBJPROP_XDISTANCE, x);
+   ObjectSetInteger(0, n, OBJPROP_YDISTANCE, y);
+   ObjectSetString(0, n, OBJPROP_TEXT, txt);
+   ObjectSetString(0, n, OBJPROP_FONT, font);
+   ObjectSetInteger(0, n, OBJPROP_FONTSIZE, size);
+   ObjectSetInteger(0, n, OBJPROP_COLOR, clr);
+   ObjectSetInteger(0, n, OBJPROP_BACK, false);
+   ObjectSetInteger(0, n, OBJPROP_SELECTABLE, false);
+   ObjectSetInteger(0, n, OBJPROP_HIDDEN, true);
+  }
+
+void PSet(string nm, string txt, color clr)
+  {
+   string n = PFX + nm;
+   ObjectSetString(0, n, OBJPROP_TEXT, txt);
+   ObjectSetInteger(0, n, OBJPROP_COLOR, clr);
+  }
+
+//--- Fondo con degradado vertical (simula una imagen, sin archivos)
+void PGradient(int x, int y, int w, int h)
+  {
+   int strip = 6;
+   int n = (h + strip - 1) / strip;
+   for(int i = 0; i < n; i++)
+     {
+      double t = (n <= 1) ? 0.0 : (double)i / (n - 1);
+      int r = (int)(32 + (12 - 32) * t);
+      int g = (int)(36 + (15 - 36) * t);
+      int b = (int)(58 + (24 - 58) * t);
+      PRect("g" + (string)i, x, y + i * strip, w, strip + 1,
+            (color)((b << 16) | (g << 8) | r));
+     }
+  }
+
+string g_keys[9] = {"sym","bias","risk","pos","fpnl","trades","realized","balance","equity"};
+
+void CreatePanel()
+  {
+   if(!InpShowPanel) return;
+   int X = InpPanelX, Y = InpPanelY, W = 268, pad = 14, H = 304;
+
+   PGradient(X, Y, W, H);
+   PRect("lbar", X, Y, 3, H, InpAccent);          // barra de acento izquierda
+   PRect("tbar", X, Y, W, 4, InpAccent);          // barra de acento superior
+   PRect("hsep", X, Y + 54, W, 1, COL_SEP);       // separador de cabecera
+
+   PLabel("title", X + pad, Y + 15, "FOREXBOT", InpAccent, 14, "Arial Black",
+          ANCHOR_LEFT_UPPER);
+   PLabel("sub", X + pad, Y + 37, StratName(), COL_MUT, 8, "Segoe UI",
+          ANCHOR_LEFT_UPPER);
+
+   string caps[9] = {"Simbolo","Senal","Riesgo","Posicion","PnL flotante",
+                     "Operaciones","P/L total","Balance","Equity"};
+   int y0 = Y + 66, rowH = 25;
+   for(int i = 0; i < 9; i++)
+     {
+      int ry = y0 + i * rowH;
+      PLabel("c_" + g_keys[i], X + pad, ry, caps[i], COL_MUT, 9, "Segoe UI",
+             ANCHOR_LEFT_UPPER);
+      PLabel("v_" + g_keys[i], X + W - pad, ry, "—", COL_TXT, 9, "Segoe UI",
+             ANCHOR_RIGHT_UPPER);
+      if(i < 8)
+         PRect("rs" + (string)i, X + pad, ry + rowH - 4, W - 2 * pad, 1, COL_SEP);
+     }
+   ChartRedraw();
+  }
+
+void UpdatePanel()
+  {
+   if(!InpShowPanel) return;
+   string ccy = AccountInfoString(ACCOUNT_CURRENCY);
+
+   ENUM_SIGNAL bias = CurrentBias();
+   string bt = (bias == SIG_LONG) ? "COMPRA" : (bias == SIG_SHORT ? "VENTA" : "NEUTRAL");
+   color  bc = (bias == SIG_LONG) ? COL_GRN  : (bias == SIG_SHORT ? COL_RED : COL_MUT);
+
+   string pdesc;
+   double fpnl = FloatingPnl(pdesc);
+   color  fc = (fpnl > 0) ? COL_GRN : (fpnl < 0 ? COL_RED : COL_TXT);
+
+   int trades; double realized;
+   HistoryStats(trades, realized);
+   color rc = (realized > 0) ? COL_GRN : (realized < 0 ? COL_RED : COL_TXT);
+
+   double bal = AccountInfoDouble(ACCOUNT_BALANCE);
+   double eq  = AccountInfoDouble(ACCOUNT_EQUITY);
+
+   PSet("sym",      _Symbol + "  " + TFString(g_tf), COL_TXT);
+   PSet("bias",     bt, bc);
+   PSet("risk",     StringFormat("%.2f %%", InpRiskPerTrade * 100.0), COL_TXT);
+   PSet("pos",      pdesc, (pdesc == "—") ? COL_MUT : COL_TXT);
+   PSet("fpnl",     StringFormat("%.2f %s", fpnl, ccy), fc);
+   PSet("trades",   (string)trades, COL_TXT);
+   PSet("realized", StringFormat("%.2f %s", realized, ccy), rc);
+   PSet("balance",  StringFormat("%.2f %s", bal, ccy), COL_TXT);
+   PSet("equity",   StringFormat("%.2f %s", eq, ccy), COL_TXT);
+   ChartRedraw();
+  }
+
+void OnTimer()
+  {
+   UpdatePanel();
+  }
+
 //+------------------------------------------------------------------+
 //| OnTick                                                           |
 //+------------------------------------------------------------------+
 void OnTick()
   {
+   if(InpShowPanel)
+      UpdatePanel();              // refresco en vivo en cada tick
+
    if(InpNewBarOnly && !IsNewBar())
       return;
 

@@ -56,6 +56,34 @@ Riesgo y stops (comunes a todas):
    MT5 esté **activado** (verde). Verás una carita 🙂 arriba a la derecha del
    gráfico cuando el EA esté activo.
 
+## Panel visual en el gráfico
+
+El EA dibuja un panel profesional (tema oscuro con degradado y barra de acento)
+directamente sobre el gráfico, que se **refresca cada segundo**. Muestra:
+
+- **Símbolo** y temporalidad en operación.
+- **Señal** (bias direccional en vivo): `COMPRA` (verde), `VENTA` (rojo) o `NEUTRAL`.
+- **Riesgo %** configurado por operación.
+- **Posición** abierta (dirección, lotes y precio de entrada).
+- **PnL flotante** de la posición abierta (verde/rojo).
+- **Operaciones** cerradas por el EA.
+- **P/L total** realizado (verde/rojo).
+- **Balance** y **Equity** de la cuenta.
+
+Parámetros del grupo *Panel visual*:
+
+| Parámetro        | Qué hace                                              |
+|------------------|-------------------------------------------------------|
+| `InpShowPanel`   | Muestra u oculta el panel.                             |
+| `InpPanelX/Y`    | Posición en píxeles desde la esquina de anclaje.      |
+| `InpPanelCorner` | Esquina del gráfico donde se ancla el panel.          |
+| `InpAccent`      | Color de acento (cabecera y barras).                  |
+
+> El fondo es un degradado **dibujado por código**, así que no necesitas copiar
+> ninguna imagen: el panel se ve bien nada más compilar. Si quieres una imagen
+> propia de fondo, se puede añadir como recurso `OBJ_BITMAP_LABEL` — dímelo y lo
+> integro.
+
 ## Probar antes con el Strategy Tester (recomendado)
 
 Antes de operar en real, pruébalo con datos históricos:
