@@ -1,188 +1,124 @@
-# forexbot — versión nativa MQL5 (Expert Advisor)
+# forexbot — versión nativa MQL5 (EA + indicador)
 
-Esta es la versión del bot que **se compila e instala dentro de MetaTrader 5**,
-sin Python. Es un Expert Advisor (`forexbot.mq5`) que corre directamente en el
-terminal MT5, sobre cualquier símbolo y temporalidad.
+Robot **day trading** que se compila e instala dentro de MetaTrader 5, sin
+Python. Incluye un **Expert Advisor** (`forexbot.mq5`) y un **indicador gráfico**
+acompañante (`forexbot_signals.mq5`).
 
-Incluye las **mismas 5 estrategias** que la versión Python y la misma filosofía:
-una sola posición a la vez, stop y objetivo basados en ATR. **Sin grid, hedging,
-HFT ni martingala.**
+- **Dos estrategias** (las más robustas de las probadas): **Donchian breakout** y
+  **MACD trend**.
+- Pensado para operar **Oro (XAUUSD), NZDCAD y EURUSD** (un EA por gráfico).
+- **Day trading**: cierra todo al final del día, no mantiene posiciones overnight.
+- Una sola posición por símbolo, stops por ATR. **Sin grid, hedging, HFT ni
+  martingala.**
+- **Protección para prop firm** integrada (DD diario, total, flotante y objetivo
+  de profit), todo configurable.
 
-> ¿Cuál usar? La versión **MQL5** (esta) es la más sencilla: todo ocurre dentro
-> de MT5, funciona en cualquier sistema donde corra MT5 y se puede optimizar con
-> el *Strategy Tester*. La versión **Python** te sirve si quieres controlar MT5
-> desde fuera o reutilizar el backtester en Python.
+> ⚠️ El conjunto de estrategias es una base sólida, pero **ninguna estrategia es
+> rentable "de fábrica"** en todos los mercados. Hay que **optimizar los
+> parámetros con el Strategy Tester** sobre datos reales de tu bróker para cada
+> símbolo. Los presets son puntos de partida, no garantías.
 
-## Estrategias y parámetros
+## Estrategias
 
-Seleccionas la estrategia con el parámetro **`InpStrategy`**:
+| `InpStrategy`             | Tipo        | Idea                                              |
+|---------------------------|-------------|---------------------------------------------------|
+| `STRAT_DONCHIAN_BREAKOUT` (0) | Ruptura  | Rompe el máximo/mínimo de las N velas previas.   |
+| `STRAT_MACD_TREND` (1)        | Momentum | Cruce MACD filtrado por una EMA de tendencia.    |
 
-| Valor                      | Estrategia                                         |
-|----------------------------|----------------------------------------------------|
-| `STRAT_MA_CROSSOVER`       | Cruce de medias (SMA rápida/lenta)                |
-| `STRAT_RSI_REVERSION`      | Reversión por RSI (sale de sobreventa/sobrecompra) |
-| `STRAT_DONCHIAN_BREAKOUT`  | Ruptura del canal de las N velas previas           |
-| `STRAT_MACD_TREND`         | Cruce MACD filtrado por una EMA de tendencia       |
-| `STRAT_BOLLINGER_BREAKOUT` | Ruptura de banda de Bollinger                      |
+Ambas usan stop y objetivo por ATR (`InpAtrStop`, `InpAtrTarget`).
 
-Riesgo y stops (comunes a todas):
-- `InpRiskPerTrade` — fracción del *equity* arriesgada por operación (0.01 = 1%).
-  El lote se calcula con el *tick value* real del símbolo y la distancia del stop.
-- `InpAtrPeriod`, `InpAtrStop`, `InpAtrTarget` — stop = `ATR * InpAtrStop`,
-  objetivo = `ATR * InpAtrTarget`.
-- `InpMaxPositions` — máximo de posiciones simultáneas de este EA (por defecto 1).
-- `InpNewBarOnly` — operar solo al cerrar cada vela (recomendado).
+## Instalar el EA
 
-## Cómo compilar e instalar (paso a paso)
+1. En MT5: **Archivo → Abrir carpeta de datos**.
+2. Copia [`Experts/forexbot.mq5`](Experts/forexbot.mq5) en **`MQL5\Experts`**.
+3. **F4** (MetaEditor) → abre `forexbot.mq5` → **F7** (Compilar). 0 errores → genera `forexbot.ex5`.
 
-1. **Abre la carpeta de datos de MT5**: en MetaTrader 5 → menú
-   **Archivo → Abrir carpeta de datos**. Se abrirá el explorador.
-2. Entra en la carpeta **`MQL5\Experts`** y copia ahí el archivo
-   [`Experts/forexbot.mq5`](Experts/forexbot.mq5) de este repo.
-3. **Abre MetaEditor** (en MT5 pulsa **F4**, o el botón "IDE / MetaEditor").
-4. En el navegador de MetaEditor, abre `Experts\forexbot.mq5` y pulsa
-   **Compilar** (**F7**). Debe terminar con **0 errores**. Se generará
-   `forexbot.ex5`.
-5. Vuelve a MT5. En el panel **Navegador → Asesores Expertos** verás
-   **forexbot** (pulsa actualizar si no aparece).
+## Instalar el indicador
 
-## Cómo ponerlo a operar
+1. Copia [`Indicators/forexbot_signals.mq5`](Indicators/forexbot_signals.mq5) en
+   **`MQL5\Indicators`**.
+2. En MetaEditor, ábrelo y **F7** (Compilar).
+3. En MT5, **Navegador → Indicadores → forexbot signals** y arrástralo al gráfico.
 
-1. Abre el gráfico del símbolo y la temporalidad que quieras (p. ej. EURUSD M15).
-2. **Arrastra** `forexbot` desde el Navegador al gráfico.
-3. En la pestaña **Comunes**, marca **"Permitir trading algorítmico"**.
-4. En la pestaña **Entradas (Inputs)**, elige la estrategia y ajusta el riesgo.
-5. Acepta. Asegúrate de que el botón **"Algo Trading"** de la barra superior de
-   MT5 esté **activado** (verde). Verás una carita 🙂 arriba a la derecha del
-   gráfico cuando el EA esté activo.
+El indicador dibuja **flechas de compra/venta** donde la estrategia daría señal y,
+opcionalmente, el **canal Donchian**. Sirve para *ver* dónde entraría el robot.
+Configura `InpStrategy` igual que en el EA para que coincidan.
 
-## Panel visual en el gráfico
+## Cómo operar Oro, NZDCAD y EURUSD
 
-El EA dibuja un panel profesional (tema oscuro con degradado y barra de acento)
-directamente sobre el gráfico, que se **refresca cada segundo**. Muestra:
+El EA opera **el símbolo de su gráfico**, así que adjúntalo **una vez por símbolo**:
 
-- **Símbolo** y temporalidad en operación.
-- **Señal** (bias direccional en vivo): `COMPRA` (verde), `VENTA` (rojo) o `NEUTRAL`.
-- **Riesgo %** configurado por operación.
-- **Posición** abierta (dirección, lotes y precio de entrada).
-- **PnL flotante** de la posición abierta (verde/rojo).
-- **Operaciones** cerradas por el EA.
-- **P/L total** realizado (verde/rojo).
-- **Balance** y **Equity** de la cuenta.
+1. Abre el gráfico de **XAUUSD** en **M15** → arrastra `forexbot` → pestaña
+   *Entradas* → **Cargar** `presets/forexbot_XAUUSD.set`.
+2. Repite con **EURUSD** (`forexbot_EURUSD.set`) y **NZDCAD**
+   (`forexbot_NZDCAD.set`).
+3. Marca *Permitir trading algorítmico* y activa el botón **Algo Trading**.
 
-Parámetros del grupo *Panel visual*:
+Cada preset usa un **número mágico distinto** (234001/2/3), así no se pisan entre
+gráficos.
 
-| Parámetro        | Qué hace                                              |
-|------------------|-------------------------------------------------------|
-| `InpShowPanel`   | Muestra u oculta el panel.                             |
-| `InpPanelX/Y`    | Posición en píxeles desde la esquina de anclaje.      |
-| `InpPanelCorner` | Esquina del gráfico donde se ancla el panel.          |
-| `InpAccent`      | Color de acento (cabecera y barras).                  |
+## Day trading (sin overnight)
 
-> El fondo es un degradado **dibujado por código**, así que no necesitas copiar
-> ninguna imagen: el panel se ve bien nada más compilar. Si quieres una imagen
-> propia de fondo, se puede añadir como recurso `OBJ_BITMAP_LABEL` — dímelo y lo
-> integro.
+| Parámetro          | Defecto | Qué hace                                              |
+|--------------------|--------:|-------------------------------------------------------|
+| `InpCloseEndOfDay` | true    | Cierra todas las posiciones del EA al final del día.  |
+| `InpCloseHour/Minute` | 23:30 | Hora (servidor) del cierre diario.                  |
+| `InpUseSession`    | false   | Limita las **entradas** a una franja horaria.         |
+| `InpSessionStart/End` | 7–20 | Franja de sesión (hora servidor) si se activa.       |
 
-Vista previa del diseño (referencia; el render real lo hace MT5):
+Así el bot **no deja trades abiertos overnight**. Opera en temporalidades
+intradía (M5/M15) — el preset usa **M15**.
+
+## Panel visual
+
+Panel oscuro con degradado que se refresca cada segundo y muestra: símbolo/TF,
+señal (bias), riesgo %, posición, **PnL flotante**, operaciones, **P/L total**,
+balance, equity y la sección **PROTECCIÓN**.
 
 ![Mockup del panel](docs/panel_mockup.svg)
 
 ## Protección para prop firm
 
-El EA incluye **tres cortacircuitos configurables** para respetar las reglas de
-una prop firm. Todos los límites son parámetros (grupo *Protección*):
+Cuatro controles configurables (grupo *Protección*):
 
-| Parámetro            | Defecto | Qué controla                                                        |
-|----------------------|--------:|---------------------------------------------------------------------|
-| `InpUseProtection`   | true    | Activa/desactiva toda la protección.                                |
-| `InpMaxFloatDDPct`   | 1.9 %   | **DD de PnL flotante por símbolo**: cierra las posiciones del símbolo. |
-| `InpMaxDailyDDPct`   | 3.99 %  | **DD diario**: cierra todo y pausa el día.                          |
-| `InpMaxTotalDDPct`   | 10.0 %  | **DD total**: cierra todo y detiene.                                |
-| `InpDailyBase`       | Balance del día | Base del DD diario/flotante: balance de inicio de día o balance inicial fijo. |
-| `InpSafetyMarginPct` | 10.0 %  | **Margen de seguridad**: corta antes de tocar la regla real.        |
-| `InpDailyProfitTarget` | 100 USD | **Objetivo de profit diario** (moneda de la cuenta): al alcanzarlo, pausa el día. `0` lo desactiva. |
-| `InpCloseOnTarget`   | true    | Cerrar las posiciones del EA al lograr el objetivo (asegura la ganancia). |
-| `InpHaltDayOnFloat`  | true    | Tras cortar por flotante, pausar también el resto del día.          |
-| `InpAlertOnBreach`   | true    | Muestra un `Alert` de MT5 al violar un límite.                      |
-| `InpResetGuard`      | false   | Pon a `true` una vez para reiniciar contadores (nuevo desafío).     |
+| Parámetro            | Defecto | Qué controla                                          |
+|----------------------|--------:|-------------------------------------------------------|
+| `InpMaxFloatDDPct`   | 1.9 %   | DD de PnL flotante **por símbolo** → cierra ese símbolo. |
+| `InpMaxDailyDDPct`   | 3.99 %  | DD diario → cierra todo y pausa el día.               |
+| `InpMaxTotalDDPct`   | 10.0 %  | DD total → cierra todo y detiene.                     |
+| `InpDailyProfitTarget` | 100   | Objetivo de profit diario → pausa el día al lograrlo. |
+| `InpDailyBase`       | Balance del día | Base del DD diario/flotante.                  |
+| `InpSafetyMarginPct` | 10.0 %  | Margen: corta en el límite **efectivo = límite×(1−margen)**. |
+| `InpCloseOnTarget`   | true    | Cerrar posiciones al lograr el objetivo.              |
+| `InpResetGuard`      | false   | Reiniciar contadores (nuevo desafío).                 |
 
-Cómo funciona:
-- **Todos los DD se miden sobre BALANCE, no sobre equity** (como exigen casi todas
-  las prop firms):
-  - **DD total** → contra el **balance inicial** del desafío (capital de
-    referencia, fijado la primera vez que arrancas el EA).
-  - **DD diario** y **DD flotante** → contra el **balance de inicio del día**, que
-    se ancla automáticamente al cambiar de día. Con `InpDailyBase = Balance
-    inicial fijo` puedes basarlos en el balance inicial del desafío en su lugar.
-- **Margen de seguridad** (`InpSafetyMarginPct`): el EA corta en el límite
-  **efectivo = límite × (1 − margen)**. Ejemplo con margen 10%: el DD diario de
-  3.99% corta realmente en **3.59%**, el total de 10% en **9.0%** y el flotante de
-  1.9% en **1.71%**. Así dejas un colchón para que el prop firm **no** cierre la
-  cuenta por rozar la regla (slippage, gap, spread de cierre).
-- **Objetivo de profit diario** (`InpDailyProfitTarget`): el profit del día se mide
-  como `equity − balance de inicio de día`. Al alcanzar el objetivo (p. ej.
-  +100 USD), el EA **cierra las posiciones** (si `InpCloseOnTarget`) y **pausa
-  hasta el día siguiente**, asegurando la ganancia. El panel muestra
-  `Profit hoy` y el estado pasa a `OBJETIVO OK`.
-- **Floating DD por símbolo** se mide sobre el PnL flotante (profit + swap) de las
-  posiciones de **este EA** en el símbolo del gráfico.
-- El balance/equity de inicio de día, el capital de referencia y el estado de
-  bloqueo se **persisten en variables globales del terminal**, así que sobreviven
-  a un reinicio de MT5 (clave para no perder el conteo del DD diario).
+- **Todos los DD se miden sobre BALANCE** (no equity): total contra el balance
+  inicial; diario/flotante contra el balance de inicio de día.
+- El **margen de seguridad** hace que el EA corte antes de tocar la regla real
+  (con 10%: diario 3.99%→3.59%, total 10%→9%, flotante 1.9%→1.71%).
+- El balance de inicio de día, el capital de referencia y el bloqueo se
+  **persisten en variables globales del terminal** (sobreviven a reinicios).
+- Para un **nuevo desafío**: carga el EA con `InpResetGuard = true` una vez y
+  vuelve a `false`.
 
-> Para empezar un **nuevo desafío** (resetear el capital de referencia y el
-> bloqueo total), carga el EA una vez con `InpResetGuard = true` y vuelve a
-> ponerlo en `false`.
+## Presets (.set)
 
-El panel muestra en vivo, en su sección **PROTECCIÓN** (con el margen en el
-título), el estado (`ACTIVO` / `PAUSA DÍA` / `DETENIDO`) y cada DD como
-`uso / límite efectivo %` con color (verde → ámbar al pasar el 50% → rojo al
-alcanzar el corte). El "límite efectivo" ya incluye el margen de seguridad.
+En [`presets/`](presets/): `forexbot_XAUUSD.set`, `forexbot_EURUSD.set`,
+`forexbot_NZDCAD.set`. Todos en M15, day trading, con la protección activa.
+Cárgalos desde la pestaña *Entradas* del EA o del Strategy Tester (**Cargar**).
 
-## Presets de riesgo (.set)
+## Optimizar / probar (MUY recomendado)
 
-En [`presets/`](presets/) tienes 3 perfiles listos para cargar:
+1. **Ver → Probador de estrategias** (**Ctrl+R**).
+2. Elige `forexbot`, el símbolo, **M15** y un rango de fechas.
+3. Usa **Optimización** para barrer `InpDonchianPeriod`, `InpAtrStop`,
+   `InpAtrTarget`, MACD, etc. y quedarte con lo que funciona en datos reales.
 
-| Archivo                      | Perfil       | Riesgo/op. | ATR stop / target | Estrategia        |
-|------------------------------|--------------|-----------:|-------------------|-------------------|
-| `forexbot_conservador.set`   | Bajo riesgo  | 0.5%       | 2.5 / 3.5         | MACD trend        |
-| `forexbot_medio.set`         | Equilibrado  | 1.0%       | 2.0 / 3.0         | MA crossover      |
-| `forexbot_agresivo.set`      | Agresivo     | 2.0%       | 1.5 / 4.0         | Donchian breakout |
-| `forexbot_xauusd.set`        | Oro (H1/H4)  | 1.0%       | 2.5 / 4.0         | Donchian breakout |
-
-Todos mantienen **1 sola posición** (sin grid/martingala). El "agresivo" arriesga
-más por operación y tiene mayor drawdown esperado. El de **XAUUSD (oro)** usa un
-stop ATR más amplio y mayor `Deviation` por la volatilidad y el slippage del oro.
-
-**Cómo cargarlos:**
-- Al añadir el EA al gráfico, en la ventana de propiedades, pestaña **Entradas**
-  → botón **Cargar (Load)** → elige el `.set`.
-- O en el **Probador de estrategias**, pestaña *Parámetros de entrada* → **Cargar**.
-
-> Puedes cargar un perfil y luego cambiar solo `InpStrategy` para aplicar ese
-> nivel de riesgo a otra estrategia. Empieza siempre en **demo**.
-
-## Probar antes con el Strategy Tester (recomendado)
-
-Antes de operar en real, pruébalo con datos históricos:
-
-1. En MT5 abre **Ver → Probador de estrategias** (**Ctrl+R**).
-2. Selecciona el Asesor Experto **forexbot**, el símbolo, la temporalidad y el
-   rango de fechas.
-3. Ejecuta. Puedes usar **Optimización** para barrer parámetros (periodos, ATR…).
-
-> Empieza **siempre** con una cuenta **demo**. Operar Forex apalancado conlleva
-> un riesgo sustancial de pérdida. Esto es software educativo, sin garantías.
+> Empieza **siempre** en cuenta **demo**. Trading apalancado = alto riesgo de
+> pérdida. Software educativo, sin garantías.
 
 ## Notas técnicas
 
-- Usa solo indicadores nativos de MT5 (`iMA`, `iRSI`, `iATR`, `iMACD`, `iBands`)
-  y `iHighest`/`iLowest` para Donchian, más la clase estándar `CTrade`
-  (`<Trade/Trade.mqh>`). No requiere librerías externas.
-- Las señales se evalúan sobre la **vela cerrada** (shift 1 frente a 2), igual
-  que el backtester en Python, para que el comportamiento sea coherente.
-- Respeta `SYMBOL_TRADE_STOPS_LEVEL` (distancia mínima de SL/TP del bróker) y los
-  límites de volumen del símbolo (`VOLUME_MIN/STEP/MAX`).
-- El EA identifica sus propias posiciones por **número mágico** (`InpMagic`), así
-  que puede convivir con operaciones manuales u otros EAs.
+- Indicadores nativos (`iATR`, `iMACD`, `iMA`, `iHighest`/`iLowest`) + `CTrade`.
+- Señales evaluadas sobre la **vela cerrada** (shift 1 vs 2).
+- El EA identifica sus posiciones por **número mágico**.

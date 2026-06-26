@@ -1,28 +1,23 @@
 //+------------------------------------------------------------------+
 //|                                                     forexbot.mq5  |
-//|   Robot de trading Forex - tendencia/momentum de una sola        |
-//|   posicion con stops basados en ATR.                             |
-//|   SIN grid / hedging / HFT / martingala.                         |
-//|                                                                  |
-//|   Portado del bot Python del mismo repositorio. Mismas 5         |
-//|   estrategias seleccionables por parametro.                      |
+//|   Robot de trading Forex - DAY TRADING (sin overnight).          |
+//|   Dos estrategias: Donchian breakout y MACD trend.               |
+//|   Una sola posicion, stops por ATR. SIN grid/hedging/HFT/        |
+//|   martingala. Proteccion para prop firm integrada.               |
 //+------------------------------------------------------------------+
 #property copyright "forexbot"
 #property link      "https://github.com/Punisherkanna/webhook"
-#property version   "1.00"
-#property description "Forex EA: MA crossover, RSI, Donchian, MACD, Bollinger."
+#property version   "2.00"
+#property description "Forex EA day-trading: Donchian breakout + MACD trend."
 #property strict
 
 #include <Trade/Trade.mqh>
 
-//--- Estrategia seleccionable
+//--- Estrategia seleccionable (solo las dos mas robustas)
 enum ENUM_STRATEGY
   {
-   STRAT_MA_CROSSOVER,        // MA crossover (cruce de medias)
-   STRAT_RSI_REVERSION,       // RSI reversion (reversion)
    STRAT_DONCHIAN_BREAKOUT,   // Donchian breakout (ruptura de canal)
-   STRAT_MACD_TREND,          // MACD trend (tendencia con filtro EMA)
-   STRAT_BOLLINGER_BREAKOUT   // Bollinger breakout (ruptura de banda)
+   STRAT_MACD_TREND           // MACD trend (momentum con filtro EMA)
   };
 
 enum ENUM_SIGNAL { SIG_NONE, SIG_LONG, SIG_SHORT };
@@ -36,31 +31,30 @@ enum ENUM_DAILY_BASE
 
 //============================ Parametros ============================
 input group "General"
-input ENUM_STRATEGY   InpStrategy        = STRAT_MA_CROSSOVER; // Estrategia
-input ENUM_TIMEFRAMES InpTimeframe       = PERIOD_CURRENT;     // Temporalidad
-input long            InpMagic           = 234000;             // Numero magico
-input bool            InpNewBarOnly       = true;              // Operar solo en vela cerrada
-input ulong           InpDeviation       = 20;                 // Desviacion maxima (puntos)
-input string          InpComment         = "forexbot";         // Comentario de orden
+input ENUM_STRATEGY   InpStrategy   = STRAT_DONCHIAN_BREAKOUT; // Estrategia
+input ENUM_TIMEFRAMES InpTimeframe  = PERIOD_CURRENT;          // Temporalidad (usa M5/M15)
+input long            InpMagic      = 234000;                  // Numero magico
+input bool            InpNewBarOnly = true;                    // Operar solo en vela cerrada
+input ulong           InpDeviation  = 30;                      // Desviacion maxima (puntos)
+input string          InpComment    = "forexbot";              // Comentario de orden
 
 input group "Riesgo / dimensionamiento"
-input double InpRiskPerTrade   = 0.01;  // Riesgo por operacion (fraccion de equity, 0-1)
-input double InpMaxLots        = 10.0;  // Lote maximo permitido
-input int    InpMaxPositions   = 1;     // Maximo de posiciones simultaneas (de este EA)
+input double InpRiskPerTrade = 0.01;  // Riesgo por operacion (fraccion de equity, 0-1)
+input double InpMaxLots      = 10.0;  // Lote maximo permitido
+input int    InpMaxPositions = 1;     // Maximo de posiciones simultaneas (de este EA)
 
 input group "Stops por ATR"
 input int    InpAtrPeriod = 14;   // Periodo ATR
-input double InpAtrStop    = 2.0; // Stop = ATR * este factor
-input double InpAtrTarget  = 3.0; // Objetivo = ATR * este factor
+input double InpAtrStop    = 1.5; // Stop = ATR * este factor
+input double InpAtrTarget  = 2.0; // Objetivo = ATR * este factor
 
-input group "MA crossover"
-input int InpMaFast = 10;   // SMA rapida
-input int InpMaSlow = 30;   // SMA lenta
-
-input group "RSI reversion"
-input int    InpRsiPeriod     = 14; // Periodo RSI
-input double InpRsiOversold   = 30; // Nivel de sobreventa
-input double InpRsiOverbought = 70; // Nivel de sobrecompra
+input group "Day trading (sin overnight)"
+input bool InpCloseEndOfDay = true;  // Cerrar todo al final del dia (no overnight)
+input int  InpCloseHour     = 23;    // Hora de cierre (servidor)
+input int  InpCloseMinute   = 30;    // Minuto de cierre
+input bool InpUseSession    = false; // Limitar entradas a una franja horaria
+input int  InpSessionStart  = 7;     // Inicio de sesion (hora servidor)
+input int  InpSessionEnd    = 20;    // Fin de sesion (hora servidor)
 
 input group "Donchian breakout"
 input int InpDonchianPeriod = 20;   // Periodo del canal (velas previas)
@@ -71,22 +65,18 @@ input int InpMacdSlow        = 26;  // EMA lenta MACD
 input int InpMacdSignal      = 9;   // EMA de la senal MACD
 input int InpMacdTrendPeriod = 100; // EMA del filtro de tendencia
 
-input group "Bollinger breakout"
-input int    InpBbPeriod = 20;  // Periodo de las bandas
-input double InpBbStd    = 2.0; // Desviaciones estandar
-
 input group "Proteccion (prop firm)"
-input bool   InpUseProtection   = true;  // Activar limites de proteccion
-input double InpMaxFloatDDPct    = 1.9;  // Max DD de PnL flotante POR SIMBOLO (%)
-input double InpMaxDailyDDPct    = 3.99; // Max DD diario (%)
-input double InpMaxTotalDDPct    = 10.0; // Max DD total (%)
+input bool   InpUseProtection     = true;  // Activar limites de proteccion
+input double InpMaxFloatDDPct      = 1.9;   // Max DD de PnL flotante POR SIMBOLO (%)
+input double InpMaxDailyDDPct      = 3.99;  // Max DD diario (%)
+input double InpMaxTotalDDPct      = 10.0;  // Max DD total (%)
 input ENUM_DAILY_BASE InpDailyBase = DAILY_BASE_DAY_BALANCE; // Base del DD diario/flotante
-input double InpSafetyMarginPct  = 10.0; // Margen de seguridad (% del limite)
-input double InpDailyProfitTarget = 100.0; // Objetivo de profit diario (moneda; 0=off)
-input bool   InpCloseOnTarget     = true;  // Cerrar posiciones al lograr el objetivo
-input bool   InpHaltDayOnFloat   = true; // Tras cortar por flotante, pausar el dia
-input bool   InpAlertOnBreach    = true; // Avisar (Alert) al violar un limite
-input bool   InpResetGuard       = false;// Reiniciar contadores (nuevo desafio)
+input double InpSafetyMarginPct    = 10.0;  // Margen de seguridad (% del limite)
+input double InpDailyProfitTarget  = 100.0; // Objetivo de profit diario (moneda; 0=off)
+input bool   InpCloseOnTarget      = true;  // Cerrar posiciones al lograr el objetivo
+input bool   InpHaltDayOnFloat     = true;  // Tras cortar por flotante, pausar el dia
+input bool   InpAlertOnBreach      = true;  // Avisar (Alert) al violar un limite
+input bool   InpResetGuard         = false; // Reiniciar contadores (nuevo desafio)
 
 input group "Panel visual"
 input bool             InpShowPanel   = true;             // Mostrar panel
@@ -105,17 +95,13 @@ input color            InpAccent      = C'0,184,148';     // Color de acento
 #define COL_SEP C'46,49,68'
 
 //============================ Estado global ========================
-CTrade        g_trade;
+CTrade          g_trade;
 ENUM_TIMEFRAMES g_tf;
-datetime      g_lastBar = 0;
+datetime        g_lastBar = 0;
 
 int h_atr   = INVALID_HANDLE;
-int h_fast  = INVALID_HANDLE;
-int h_slow  = INVALID_HANDLE;
-int h_rsi   = INVALID_HANDLE;
 int h_macd  = INVALID_HANDLE;
 int h_trend = INVALID_HANDLE;
-int h_bands = INVALID_HANDLE;
 
 //--- Estado de proteccion (persistido en variables globales del terminal)
 double   g_refBalance      = 0.0;   // balance inicial (referencia del DD total)
@@ -132,7 +118,7 @@ double g_dayProfit  = 0.0;   // profit del dia (equity - balance inicio de dia)
 bool   g_targetHit  = false; // objetivo de profit diario alcanzado
 
 //+------------------------------------------------------------------+
-//| Utilidad: leer un valor de un buffer de indicador (serie)        |
+//| Utilidades de indicadores                                        |
 //+------------------------------------------------------------------+
 double IndVal(int handle, int buffer, int shift)
   {
@@ -151,7 +137,7 @@ bool Valid(double x)
   }
 
 //+------------------------------------------------------------------+
-//| OnInit: validar parametros y crear los handles necesarios        |
+//| OnInit                                                           |
 //+------------------------------------------------------------------+
 int OnInit()
   {
@@ -160,11 +146,6 @@ int OnInit()
    if(InpRiskPerTrade <= 0.0 || InpRiskPerTrade > 1.0)
      {
       Print("ERROR: InpRiskPerTrade debe estar en (0, 1]");
-      return INIT_PARAMETERS_INCORRECT;
-     }
-   if(InpStrategy == STRAT_MA_CROSSOVER && InpMaFast >= InpMaSlow)
-     {
-      Print("ERROR: la SMA rapida debe ser menor que la lenta");
       return INIT_PARAMETERS_INCORRECT;
      }
    if(InpStrategy == STRAT_MACD_TREND && InpMacdFast >= InpMacdSlow)
@@ -178,61 +159,41 @@ int OnInit()
    g_trade.SetTypeFillingBySymbol(_Symbol);
 
    h_atr = iATR(_Symbol, g_tf, InpAtrPeriod);
-
-   switch(InpStrategy)
-     {
-      case STRAT_MA_CROSSOVER:
-         h_fast = iMA(_Symbol, g_tf, InpMaFast, 0, MODE_SMA, PRICE_CLOSE);
-         h_slow = iMA(_Symbol, g_tf, InpMaSlow, 0, MODE_SMA, PRICE_CLOSE);
-         break;
-      case STRAT_RSI_REVERSION:
-         h_rsi = iRSI(_Symbol, g_tf, InpRsiPeriod, PRICE_CLOSE);
-         break;
-      case STRAT_DONCHIAN_BREAKOUT:
-         break; // usa iHighest/iLowest, sin handle
-      case STRAT_MACD_TREND:
-         h_macd  = iMACD(_Symbol, g_tf, InpMacdFast, InpMacdSlow, InpMacdSignal, PRICE_CLOSE);
-         h_trend = iMA(_Symbol, g_tf, InpMacdTrendPeriod, 0, MODE_EMA, PRICE_CLOSE);
-         break;
-      case STRAT_BOLLINGER_BREAKOUT:
-         h_bands = iBands(_Symbol, g_tf, InpBbPeriod, 0, InpBbStd, PRICE_CLOSE);
-         break;
-     }
-
    if(h_atr == INVALID_HANDLE)
      {
       Print("ERROR: no se pudo crear el handle de ATR");
       return INIT_FAILED;
      }
-   // Verificar que los handles de la estrategia elegida existen
-   if((InpStrategy == STRAT_MA_CROSSOVER && (h_fast == INVALID_HANDLE || h_slow == INVALID_HANDLE)) ||
-      (InpStrategy == STRAT_RSI_REVERSION && h_rsi == INVALID_HANDLE) ||
-      (InpStrategy == STRAT_MACD_TREND && (h_macd == INVALID_HANDLE || h_trend == INVALID_HANDLE)) ||
-      (InpStrategy == STRAT_BOLLINGER_BREAKOUT && h_bands == INVALID_HANDLE))
+
+   if(InpStrategy == STRAT_MACD_TREND)
      {
-      Print("ERROR: no se pudieron crear los indicadores de la estrategia");
-      return INIT_FAILED;
+      h_macd  = iMACD(_Symbol, g_tf, InpMacdFast, InpMacdSlow, InpMacdSignal, PRICE_CLOSE);
+      h_trend = iMA(_Symbol, g_tf, InpMacdTrendPeriod, 0, MODE_EMA, PRICE_CLOSE);
+      if(h_macd == INVALID_HANDLE || h_trend == INVALID_HANDLE)
+        {
+         Print("ERROR: no se pudieron crear los indicadores de MACD");
+         return INIT_FAILED;
+        }
      }
 
-   PrintFormat("forexbot iniciado: estrategia=%d  simbolo=%s  TF=%d",
-               InpStrategy, _Symbol, g_tf);
+   PrintFormat("forexbot v2 iniciado: estrategia=%s  simbolo=%s  TF=%s",
+               StratName(), _Symbol, TFString(g_tf));
 
    InitGuard();
-
    CreatePanel();
    UpdatePanel();
    if(InpShowPanel)
-      EventSetTimer(1);          // refresco del PnL flotante cada segundo
+      EventSetTimer(1);
 
    return INIT_SUCCEEDED;
   }
 
 //+------------------------------------------------------------------+
-//| OnDeinit: liberar handles                                        |
+//| OnDeinit                                                         |
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
   {
-   int handles[] = {h_atr, h_fast, h_slow, h_rsi, h_macd, h_trend, h_bands};
+   int handles[] = {h_atr, h_macd, h_trend};
    for(int i = 0; i < ArraySize(handles); i++)
       if(handles[i] != INVALID_HANDLE)
          IndicatorRelease(handles[i]);
@@ -243,7 +204,7 @@ void OnDeinit(const int reason)
   }
 
 //+------------------------------------------------------------------+
-//| Deteccion de vela nueva                                          |
+//| Helpers de tiempo / vela nueva / posiciones                      |
 //+------------------------------------------------------------------+
 bool IsNewBar()
   {
@@ -256,9 +217,6 @@ bool IsNewBar()
    return false;
   }
 
-//+------------------------------------------------------------------+
-//| Numero de posiciones de este EA en este simbolo                  |
-//+------------------------------------------------------------------+
 int CountMyPositions()
   {
    int count = 0;
@@ -273,36 +231,38 @@ int CountMyPositions()
    return count;
   }
 
-//+------------------------------------------------------------------+
-//| Senales por estrategia (evaluadas en la vela cerrada, shift 1/2) |
-//+------------------------------------------------------------------+
-ENUM_SIGNAL SignalMA()
+//--- Day trading: ¿pasamos la hora de cierre del dia?
+bool AfterDailyClose()
   {
-   double f1 = IndVal(h_fast, 0, 1), f2 = IndVal(h_fast, 0, 2);
-   double s1 = IndVal(h_slow, 0, 1), s2 = IndVal(h_slow, 0, 2);
-   if(!Valid(f1) || !Valid(f2) || !Valid(s1) || !Valid(s2))
-      return SIG_NONE;
-   if(f2 <= s2 && f1 > s1) return SIG_LONG;
-   if(f2 >= s2 && f1 < s1) return SIG_SHORT;
-   return SIG_NONE;
+   if(!InpCloseEndOfDay)
+      return false;
+   MqlDateTime t;
+   TimeToStruct(TimeCurrent(), t);
+   int nowMin = t.hour * 60 + t.min;
+   int clsMin = InpCloseHour * 60 + InpCloseMinute;
+   return nowMin >= clsMin;
   }
 
-ENUM_SIGNAL SignalRSI()
+//--- ¿Estamos dentro de la franja horaria permitida para entrar?
+bool InSession()
   {
-   double r1 = IndVal(h_rsi, 0, 1), r2 = IndVal(h_rsi, 0, 2);
-   if(!Valid(r1) || !Valid(r2))
-      return SIG_NONE;
-   if(r2 <= InpRsiOversold   && r1 > InpRsiOversold)   return SIG_LONG;
-   if(r2 >= InpRsiOverbought && r1 < InpRsiOverbought) return SIG_SHORT;
-   return SIG_NONE;
+   if(!InpUseSession)
+      return true;
+   MqlDateTime t;
+   TimeToStruct(TimeCurrent(), t);
+   int h = t.hour;
+   if(InpSessionStart <= InpSessionEnd)
+      return (h >= InpSessionStart && h < InpSessionEnd);
+   return (h >= InpSessionStart || h < InpSessionEnd); // cruza medianoche
   }
 
+//+------------------------------------------------------------------+
+//| Senales (evaluadas en la vela cerrada, shift 1/2)                |
+//+------------------------------------------------------------------+
 ENUM_SIGNAL SignalDonchian()
   {
-   int bars = Bars(_Symbol, g_tf);
-   if(bars < InpDonchianPeriod + 3)
+   if(Bars(_Symbol, g_tf) < InpDonchianPeriod + 3)
       return SIG_NONE;
-   // Canal de las N velas previas a la vela cerrada (shift 2..N+1).
    int idxH = iHighest(_Symbol, g_tf, MODE_HIGH, InpDonchianPeriod, 2);
    int idxL = iLowest(_Symbol, g_tf, MODE_LOW,  InpDonchianPeriod, 2);
    if(idxH < 0 || idxL < 0)
@@ -318,8 +278,8 @@ ENUM_SIGNAL SignalDonchian()
 
 ENUM_SIGNAL SignalMACD()
   {
-   double m1 = IndVal(h_macd, 0, 1), m2 = IndVal(h_macd, 0, 2); // MAIN
-   double g1 = IndVal(h_macd, 1, 1), g2 = IndVal(h_macd, 1, 2); // SIGNAL
+   double m1 = IndVal(h_macd, 0, 1), m2 = IndVal(h_macd, 0, 2);
+   double g1 = IndVal(h_macd, 1, 1), g2 = IndVal(h_macd, 1, 2);
    double trend = IndVal(h_trend, 0, 1);
    if(!Valid(m1) || !Valid(m2) || !Valid(g1) || !Valid(g2) || !Valid(trend))
       return SIG_NONE;
@@ -331,42 +291,20 @@ ENUM_SIGNAL SignalMACD()
    return SIG_NONE;
   }
 
-ENUM_SIGNAL SignalBollinger()
-  {
-   double u1 = IndVal(h_bands, 1, 1), u2 = IndVal(h_bands, 1, 2); // UPPER
-   double l1 = IndVal(h_bands, 2, 1), l2 = IndVal(h_bands, 2, 2); // LOWER
-   if(!Valid(u1) || !Valid(u2) || !Valid(l1) || !Valid(l2))
-      return SIG_NONE;
-   double c1 = iClose(_Symbol, g_tf, 1), c2 = iClose(_Symbol, g_tf, 2);
-   if(c2 <= u2 && c1 > u1) return SIG_LONG;
-   if(c2 >= l2 && c1 < l1) return SIG_SHORT;
-   return SIG_NONE;
-  }
-
 ENUM_SIGNAL GetSignal()
   {
-   switch(InpStrategy)
-     {
-      case STRAT_MA_CROSSOVER:      return SignalMA();
-      case STRAT_RSI_REVERSION:     return SignalRSI();
-      case STRAT_DONCHIAN_BREAKOUT: return SignalDonchian();
-      case STRAT_MACD_TREND:        return SignalMACD();
-      case STRAT_BOLLINGER_BREAKOUT:return SignalBollinger();
-     }
-   return SIG_NONE;
+   if(InpStrategy == STRAT_MACD_TREND)
+      return SignalMACD();
+   return SignalDonchian();
   }
 
 //+------------------------------------------------------------------+
-//| Dimensionamiento por riesgo (usa tick value real del simbolo)    |
+//| Dimensionamiento por riesgo                                      |
 //+------------------------------------------------------------------+
 int VolumeDigits(double step)
   {
    int d = 0;
-   while(step < 1.0 && d < 8)
-     {
-      step *= 10.0;
-      d++;
-     }
+   while(step < 1.0 && d < 8) { step *= 10.0; d++; }
    return d;
   }
 
@@ -379,7 +317,7 @@ double CalcLots(double stopDistance)
    if(tickSize <= 0.0 || tickValue <= 0.0)
       return 0.0;
 
-   double moneyPerLot = (stopDistance / tickSize) * tickValue; // perdida por 1 lote al stop
+   double moneyPerLot = (stopDistance / tickSize) * tickValue;
    if(moneyPerLot <= 0.0)
       return 0.0;
 
@@ -394,16 +332,16 @@ double CalcLots(double stopDistance)
    if(step <= 0.0)
       step = 0.01;
 
-   lots = MathFloor(lots / step) * step;          // redondeo conservador hacia abajo
+   lots = MathFloor(lots / step) * step;
    if(lots < minLot)
-      return 0.0;                                  // demasiado pequeno: no operar
+      return 0.0;
    if(lots > maxLot)
       lots = maxLot;
    return NormalizeDouble(lots, VolumeDigits(step));
   }
 
 //+------------------------------------------------------------------+
-//| Abrir una operacion con SL/TP basados en ATR                     |
+//| Abrir operacion con SL/TP por ATR                                |
 //+------------------------------------------------------------------+
 void OpenTrade(ENUM_SIGNAL sig)
   {
@@ -418,12 +356,12 @@ void OpenTrade(ENUM_SIGNAL sig)
    long   stopsLevel = SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL);
    double minDist = stopsLevel * point;
 
-   double price, sl, tp;
    double stopDist = atr * InpAtrStop;
    double tgtDist  = atr * InpAtrTarget;
-   if(stopDist < minDist) stopDist = minDist;     // respetar distancia minima del broker
+   if(stopDist < minDist) stopDist = minDist;
    if(tgtDist  < minDist) tgtDist  = minDist;
 
+   double price, sl, tp;
    if(sig == SIG_LONG)
      {
       price = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
@@ -461,13 +399,6 @@ void OpenTrade(ENUM_SIGNAL sig)
   }
 
 //============================ Proteccion (prop firm) ===============
-//  Tres cortacircuitos, todos configurables por parametro:
-//   1) DD del PnL flotante POR SIMBOLO  -> cierra las posiciones del simbolo
-//   2) DD diario (equity vs inicio del dia) -> cierra todo y pausa el dia
-//   3) DD total (equity vs capital de referencia) -> cierra todo y detiene
-//  El equity de inicio de dia y el capital de referencia se PERSISTEN en
-//  variables globales del terminal, para sobrevivir reinicios de MT5.
-//-------------------------------------------------------------------
 datetime TodayStart()
   {
    MqlDateTime dt;
@@ -509,8 +440,6 @@ void InitGuard()
      }
 
    double bal = AccountInfoDouble(ACCOUNT_BALANCE);
-
-   // Capital de referencia (DD total): se fija una sola vez por desafio.
    if(GlobalVariableCheck(g_gvRef))
       g_refBalance = GlobalVariableGet(g_gvRef);
    else
@@ -521,7 +450,6 @@ void InitGuard()
 
    g_haltTotal = (GlobalVariableCheck(g_gvHalt) && GlobalVariableGet(g_gvHalt) > 0.5);
 
-   // Ancla del dia / equity de inicio de dia.
    datetime today = TodayStart();
    if(GlobalVariableCheck(g_gvDay) && (datetime)GlobalVariableGet(g_gvDay) == today
       && GlobalVariableCheck(g_gvDayBal) && GlobalVariableCheck(g_gvDayEq))
@@ -537,7 +465,6 @@ void InitGuard()
                InpMaxFloatDDPct, InpMaxDailyDDPct, InpMaxTotalDDPct, g_refBalance);
   }
 
-//--- PnL flotante de las posiciones de este EA en ESTE simbolo
 double SymbolFloatingPnl()
   {
    double pnl = 0.0;
@@ -582,22 +509,18 @@ void Breach(string msg)
       Alert(_Symbol + " forexbot - " + msg);
   }
 
-//--- Guardian: se llama en cada tick. Devuelve true si se permite operar.
 bool RiskGuard()
   {
    datetime today = TodayStart();
    if(today != g_day)
-      AnchorDay(today);                       // rollover de dia: re-ancla
+      AnchorDay(today);
 
-   double equity = AccountInfoDouble(ACCOUNT_EQUITY);
-   // Bases: balance (no equity). Intradia = balance inicio de dia (o inicial fijo);
-   // total = balance inicial del desafio.
+   double equity    = AccountInfoDouble(ACCOUNT_EQUITY);
    double baseTotal = (g_refBalance > 0.0 ? g_refBalance : AccountInfoDouble(ACCOUNT_BALANCE));
    double baseDay   = (InpDailyBase == DAILY_BASE_INITIAL)
                       ? baseTotal
                       : (g_dayStartBalance > 0.0 ? g_dayStartBalance : baseTotal);
 
-   // Margen de seguridad: corta antes de tocar la regla real.
    double keep = 1.0 - InpSafetyMarginPct / 100.0;
    if(keep < 0.0) keep = 0.0;
 
@@ -628,8 +551,8 @@ bool RiskGuard()
                           g_dailyDDpct, InpMaxDailyDDPct * keep, InpMaxDailyDDPct));
      }
 
-   // 2b) Objetivo de profit diario: asegura la ganancia y pausa el dia.
-   double dayBase   = (g_dayStartBalance > 0.0 ? g_dayStartBalance : baseTotal);
+   // 2b) Objetivo de profit diario
+   double dayBase = (g_dayStartBalance > 0.0 ? g_dayStartBalance : baseTotal);
    g_dayProfit = equity - dayBase;
    g_targetHit = (InpDailyProfitTarget > 0.0 && g_dayProfit >= InpDailyProfitTarget);
    if(g_targetHit && !g_haltDaily)
@@ -659,15 +582,8 @@ bool RiskGuard()
 //============================ Panel visual =========================
 string StratName()
   {
-   switch(InpStrategy)
-     {
-      case STRAT_MA_CROSSOVER:       return "MA Crossover";
-      case STRAT_RSI_REVERSION:      return "RSI Reversion";
-      case STRAT_DONCHIAN_BREAKOUT:  return "Donchian Breakout";
-      case STRAT_MACD_TREND:         return "MACD Trend";
-      case STRAT_BOLLINGER_BREAKOUT: return "Bollinger Breakout";
-     }
-   return "—";
+   if(InpStrategy == STRAT_MACD_TREND) return "MACD Trend";
+   return "Donchian Breakout";
   }
 
 string TFString(ENUM_TIMEFRAMES tf)
@@ -677,58 +593,28 @@ string TFString(ENUM_TIMEFRAMES tf)
    return s;
   }
 
-//--- "Bias" direccional actual (estado de los indicadores, no el cruce)
+//--- Bias direccional actual (estado de los indicadores)
 ENUM_SIGNAL CurrentBias()
   {
-   switch(InpStrategy)
+   if(InpStrategy == STRAT_MACD_TREND)
      {
-      case STRAT_MA_CROSSOVER:
-        {
-         double f = IndVal(h_fast, 0, 1), s = IndVal(h_slow, 0, 1);
-         if(!Valid(f) || !Valid(s)) return SIG_NONE;
-         return (f > s) ? SIG_LONG : SIG_SHORT;
-        }
-      case STRAT_RSI_REVERSION:
-        {
-         double r = IndVal(h_rsi, 0, 1);
-         if(!Valid(r)) return SIG_NONE;
-         if(r < InpRsiOversold)   return SIG_LONG;
-         if(r > InpRsiOverbought) return SIG_SHORT;
-         return SIG_NONE;
-        }
-      case STRAT_DONCHIAN_BREAKOUT:
-        {
-         int ih = iHighest(_Symbol, g_tf, MODE_HIGH, InpDonchianPeriod, 1);
-         int il = iLowest(_Symbol, g_tf, MODE_LOW, InpDonchianPeriod, 1);
-         if(ih < 0 || il < 0) return SIG_NONE;
-         double up = iHigh(_Symbol, g_tf, ih), lo = iLow(_Symbol, g_tf, il);
-         double c = iClose(_Symbol, g_tf, 1);
-         return (c >= (up + lo) / 2.0) ? SIG_LONG : SIG_SHORT;
-        }
-      case STRAT_MACD_TREND:
-        {
-         double m = IndVal(h_macd, 0, 1), g = IndVal(h_macd, 1, 1);
-         double tr = IndVal(h_trend, 0, 1);
-         if(!Valid(m) || !Valid(g) || !Valid(tr)) return SIG_NONE;
-         double c = iClose(_Symbol, g_tf, 1);
-         if(m > g && c > tr) return SIG_LONG;
-         if(m < g && c < tr) return SIG_SHORT;
-         return SIG_NONE;
-        }
-      case STRAT_BOLLINGER_BREAKOUT:
-        {
-         double u = IndVal(h_bands, 1, 1), l = IndVal(h_bands, 2, 1);
-         if(!Valid(u) || !Valid(l)) return SIG_NONE;
-         double c = iClose(_Symbol, g_tf, 1);
-         if(c > u) return SIG_LONG;
-         if(c < l) return SIG_SHORT;
-         return SIG_NONE;
-        }
+      double m = IndVal(h_macd, 0, 1), g = IndVal(h_macd, 1, 1);
+      double tr = IndVal(h_trend, 0, 1);
+      if(!Valid(m) || !Valid(g) || !Valid(tr)) return SIG_NONE;
+      double c = iClose(_Symbol, g_tf, 1);
+      if(m > g && c > tr) return SIG_LONG;
+      if(m < g && c < tr) return SIG_SHORT;
+      return SIG_NONE;
      }
-   return SIG_NONE;
+   // Donchian: posicion del cierre dentro del canal previo
+   int ih = iHighest(_Symbol, g_tf, MODE_HIGH, InpDonchianPeriod, 1);
+   int il = iLowest(_Symbol, g_tf, MODE_LOW, InpDonchianPeriod, 1);
+   if(ih < 0 || il < 0) return SIG_NONE;
+   double up = iHigh(_Symbol, g_tf, ih), lo = iLow(_Symbol, g_tf, il);
+   double c2 = iClose(_Symbol, g_tf, 1);
+   return (c2 >= (up + lo) / 2.0) ? SIG_LONG : SIG_SHORT;
   }
 
-//--- PnL flotante de este EA + descripcion de la posicion abierta
 double FloatingPnl(string &posDesc)
   {
    double pnl = 0.0;
@@ -750,7 +636,6 @@ double FloatingPnl(string &posDesc)
    return pnl;
   }
 
-//--- Operaciones cerradas y P/L realizado total de este EA
 void HistoryStats(int &trades, double &realized)
   {
    trades = 0;
@@ -771,7 +656,7 @@ void HistoryStats(int &trades, double &realized)
      }
   }
 
-//--- Helpers de objetos graficos -----------------------------------
+//--- Helpers de objetos graficos
 void PRect(string nm, int x, int y, int w, int h, color bg)
   {
    string n = PFX + nm;
@@ -807,14 +692,14 @@ void PLabel(string nm, int x, int y, string txt, color clr, int size,
    ObjectSetInteger(0, n, OBJPROP_HIDDEN, true);
   }
 
+//--- Actualiza el TEXTO/COLOR de una etiqueta de VALOR (objeto "v_<clave>")
 void PSet(string nm, string txt, color clr)
   {
-   string n = PFX + nm;
+   string n = PFX + "v_" + nm;
    ObjectSetString(0, n, OBJPROP_TEXT, txt);
    ObjectSetInteger(0, n, OBJPROP_COLOR, clr);
   }
 
-//--- Fondo con degradado vertical (simula una imagen, sin archivos)
 void PGradient(int x, int y, int w, int h)
   {
    int strip = 6;
@@ -830,8 +715,6 @@ void PGradient(int x, int y, int w, int h)
      }
   }
 
-string g_keys[9] = {"sym","bias","risk","pos","fpnl","trades","realized","balance","equity"};
-
 color DDColor(double used, double limit)
   {
    if(limit <= 0.0) return COL_MUT;
@@ -841,6 +724,8 @@ color DDColor(double used, double limit)
    return COL_GRN;
   }
 
+string g_keys[9] = {"sym","bias","risk","pos","fpnl","trades","realized","balance","equity"};
+
 void CreatePanel()
   {
    if(!InpShowPanel) return;
@@ -849,9 +734,9 @@ void CreatePanel()
    int H = prot ? 441 : 304;
 
    PGradient(X, Y, W, H);
-   PRect("lbar", X, Y, 3, H, InpAccent);          // barra de acento izquierda
-   PRect("tbar", X, Y, W, 4, InpAccent);          // barra de acento superior
-   PRect("hsep", X, Y + 54, W, 1, COL_SEP);       // separador de cabecera
+   PRect("lbar", X, Y, 3, H, InpAccent);
+   PRect("tbar", X, Y, W, 4, InpAccent);
+   PRect("hsep", X, Y + 54, W, 1, COL_SEP);
 
    PLabel("title", X + pad, Y + 15, "FOREXBOT", InpAccent, 14, "Arial Black",
           ANCHOR_LEFT_UPPER);
@@ -933,20 +818,20 @@ void UpdatePanel()
       else if(g_targetHit)  { st = "OBJETIVO OK"; sc = COL_GRN; }
       else if(g_haltDaily)  { st = "PAUSA DIA";   sc = COL_AMB; }
       else                  { st = "ACTIVO";      sc = COL_GRN; }
-      // Limites EFECTIVOS (de corte) = nominal * (1 - margen).
+
       double keep = 1.0 - InpSafetyMarginPct / 100.0;
       if(keep < 0.0) keep = 0.0;
       double limF = InpMaxFloatDDPct * keep;
       double limD = InpMaxDailyDDPct * keep;
       double limT = InpMaxTotalDDPct * keep;
+
       PSet("state", st, sc);
-      string ccy2 = AccountInfoString(ACCOUNT_CURRENCY);
-      color  pcol = (g_dayProfit > 0.0) ? COL_GRN : (g_dayProfit < 0.0 ? COL_RED : COL_TXT);
+      color pcol = (g_dayProfit > 0.0) ? COL_GRN : (g_dayProfit < 0.0 ? COL_RED : COL_TXT);
       if(InpDailyProfitTarget > 0.0)
          PSet("dprofit", StringFormat("%.2f / %.0f %s", g_dayProfit,
-                                      InpDailyProfitTarget, ccy2), pcol);
+                                      InpDailyProfitTarget, ccy), pcol);
       else
-         PSet("dprofit", StringFormat("%.2f %s", g_dayProfit, ccy2), pcol);
+         PSet("dprofit", StringFormat("%.2f %s", g_dayProfit, ccy), pcol);
       PSet("fdd", StringFormat("%.2f / %.2f %%", g_floatDDpct, limF),
            DDColor(g_floatDDpct, limF));
       PSet("ddd", StringFormat("%.2f / %.2f %%", g_dailyDDpct, limD),
@@ -969,19 +854,27 @@ void OnTick()
   {
    bool canTrade = true;
    if(InpUseProtection)
-      canTrade = RiskGuard();     // chequea/aplica limites cada tick
+      canTrade = RiskGuard();
+
+   // Day trading: cierre de fin de dia (no overnight)
+   if(InpCloseEndOfDay && AfterDailyClose())
+     {
+      CloseAllMyPositions();
+      canTrade = false;
+     }
 
    if(InpShowPanel)
-      UpdatePanel();              // refresco en vivo en cada tick
+      UpdatePanel();
 
    if(InpNewBarOnly && !IsNewBar())
       return;
 
    if(!canTrade)
-      return;                                      // bloqueado por proteccion
-
+      return;
+   if(!InSession())
+      return;
    if(CountMyPositions() >= InpMaxPositions)
-      return;                                      // ya hay una posicion abierta
+      return;
 
    ENUM_SIGNAL sig = GetSignal();
    if(sig == SIG_NONE)

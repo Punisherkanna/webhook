@@ -15,7 +15,8 @@ la configuración.
 > en ATR.
 
 > **¿Prefieres un robot nativo de MT5?** También hay un Expert Advisor en MQL5
-> (las mismas 5 estrategias) que compilas en MetaEditor y ejecutas dentro de MT5
+> (day trading: Donchian breakout + MACD trend, con protección prop firm) que
+> compilas en MetaEditor y ejecutas dentro de MT5
 > sin Python — mira [`mql5/`](mql5/README.md). Es la opción más sencilla si solo
 > quieres operar en MT5.
 

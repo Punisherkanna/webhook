@@ -1,31 +1,28 @@
-; forexbot - Preset RIESGO MEDIO (equilibrado)
-; Riesgo 1% por operacion, stop/objetivo estandar (2.0/3.0 ATR), 1 posicion.
-; Estrategia MA crossover (tendencia, parametros por defecto).
-; Cargar en MT5: pestana Inputs del EA o del Strategy Tester -> Load.
+; forexbot v2 - NZDCAD - DAY TRADING
+; Donchian breakout en M15. Riesgo 1%. Sin overnight.
 InpStrategy=0
-InpTimeframe=0
-InpMagic=234000
+InpTimeframe=15
+InpMagic=234003
 InpNewBarOnly=true
 InpDeviation=20
-InpComment=forexbot-medio
+InpComment=fxbot-NZDCAD
 InpRiskPerTrade=0.01
 InpMaxLots=5.0
 InpMaxPositions=1
 InpAtrPeriod=14
-InpAtrStop=2.0
-InpAtrTarget=3.0
-InpMaFast=10
-InpMaSlow=30
-InpRsiPeriod=14
-InpRsiOversold=30
-InpRsiOverbought=70
+InpAtrStop=1.5
+InpAtrTarget=2.0
+InpCloseEndOfDay=true
+InpCloseHour=23
+InpCloseMinute=30
+InpUseSession=false
+InpSessionStart=7
+InpSessionEnd=20
 InpDonchianPeriod=20
 InpMacdFast=12
 InpMacdSlow=26
 InpMacdSignal=9
 InpMacdTrendPeriod=100
-InpBbPeriod=20
-InpBbStd=2.0
 InpUseProtection=true
 InpMaxFloatDDPct=1.9
 InpMaxDailyDDPct=3.99

@@ -183,7 +183,7 @@
 <rect x="30" y="30" width="268" height="4" fill="rgb(0,184,148)"/>
 <rect x="30" y="84" width="268" height="1" fill="rgb(46,49,68)"/>
 <text x="44" y="60" fill="rgb(0,184,148)" font-size="17" font-weight="900">FOREXBOT</text>
-<text x="44" y="78" fill="rgb(140,146,166)" font-size="11">MACD Trend</text>
+<text x="44" y="78" fill="rgb(140,146,166)" font-size="11">Donchian Breakout</text>
 <text x="44" y="100" fill="rgb(140,146,166)" font-size="12">Simbolo</text>
 <text x="284" y="100" fill="rgb(234,236,244)" font-size="12" font-weight="600" text-anchor="end">XAUUSD  H1</text>
 <rect x="44" y="116" width="240" height="1" fill="rgb(46,49,68)"/>

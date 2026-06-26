@@ -12,7 +12,8 @@ interface, so switching venues is a one-line config change.
 > one position with a fixed, ATR-based protective stop.
 
 > **Prefer a native MT5 robot?** There's also a standalone MQL5 Expert Advisor
-> (same 5 strategies) you compile in MetaEditor and run inside MT5 with no Python
+> (day-trading: Donchian breakout + MACD trend, with prop-firm protection) you
+> compile in MetaEditor and run inside MT5 with no Python
 > — see [`mql5/`](mql5/README.md).
 
 ## Highlights

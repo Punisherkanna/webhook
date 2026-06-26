@@ -1,0 +1,37 @@
+; forexbot v2 - EURUSD - DAY TRADING
+; MACD trend en M15. Riesgo 1%. Sin overnight.
+InpStrategy=1
+InpTimeframe=15
+InpMagic=234002
+InpNewBarOnly=true
+InpDeviation=20
+InpComment=fxbot-EUR
+InpRiskPerTrade=0.01
+InpMaxLots=5.0
+InpMaxPositions=1
+InpAtrPeriod=14
+InpAtrStop=1.5
+InpAtrTarget=2.0
+InpCloseEndOfDay=true
+InpCloseHour=23
+InpCloseMinute=30
+InpUseSession=false
+InpSessionStart=7
+InpSessionEnd=20
+InpDonchianPeriod=20
+InpMacdFast=12
+InpMacdSlow=26
+InpMacdSignal=9
+InpMacdTrendPeriod=100
+InpUseProtection=true
+InpMaxFloatDDPct=1.9
+InpMaxDailyDDPct=3.99
+InpMaxTotalDDPct=10.0
+InpDailyBase=0
+InpSafetyMarginPct=10.0
+InpDailyProfitTarget=100.0
+InpCloseOnTarget=true
+InpHaltDayOnFloat=true
+InpAlertOnBreach=true
+InpResetGuard=false
+InpShowPanel=true
