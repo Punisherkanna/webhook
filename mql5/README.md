@@ -131,6 +131,13 @@ En [`presets/`](presets/): `forexbot_XAUUSD.set`, `forexbot_EURUSD.set`,
 `forexbot_NZDCAD.set`. Todos en M15, day trading, con la protección activa.
 Cárgalos desde la pestaña *Entradas* del EA o del Strategy Tester (**Cargar**).
 
+**`forexbot_DIAGNOSTICO.set`** — preset especial **solo para backtest/optimización**.
+Desactiva el objetivo diario y el corte de flotante (que topan/mutilan las
+operaciones) para medir el **edge real** de la estrategia. NO usar en cuenta de
+desafío. Si la estrategia no es rentable con este preset, los topes de prop firm
+no la harán rentable: hay que optimizar parámetros primero y reactivar la
+protección después.
+
 ## Optimizar / probar (IMPRESCINDIBLE)
 
 Estas estrategias **no son rentables "de fábrica"**; hay que ajustarlas a cada
