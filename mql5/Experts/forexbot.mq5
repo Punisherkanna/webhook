@@ -57,13 +57,23 @@ input int  InpSessionStart  = 7;     // Inicio de sesion (hora servidor)
 input int  InpSessionEnd    = 20;    // Fin de sesion (hora servidor)
 
 input group "Donchian breakout"
-input int InpDonchianPeriod = 20;   // Periodo del canal (velas previas)
+input int  InpDonchianPeriod      = 20;   // Periodo del canal (velas previas)
+input bool InpDonchianTrendFilter = true; // Solo operar a favor de la EMA de tendencia
+input int  InpDonchianTrendPeriod = 100;  // EMA del filtro de tendencia (Donchian)
 
 input group "MACD trend"
 input int InpMacdFast        = 12;  // EMA rapida MACD
 input int InpMacdSlow        = 26;  // EMA lenta MACD
 input int InpMacdSignal      = 9;   // EMA de la senal MACD
 input int InpMacdTrendPeriod = 100; // EMA del filtro de tendencia
+
+input group "Gestion de la operacion (trailing)"
+input bool   InpUseBreakEven   = true; // Mover SL a break-even
+input double InpBreakEvenATR    = 1.0; // Activar BE tras este profit (en ATR)
+input double InpBreakEvenLockATR = 0.1;// Bloqueo sobre la entrada al hacer BE (ATR)
+input bool   InpUseTrailing     = true;// Trailing stop por ATR
+input double InpTrailStartATR    = 1.5;// Empezar a seguir tras este profit (ATR)
+input double InpTrailDistATR      = 2.0;// Distancia del trailing (ATR)
 
 input group "Proteccion (prop firm)"
 input bool   InpUseProtection     = true;  // Activar limites de proteccion
@@ -175,6 +185,15 @@ int OnInit()
          return INIT_FAILED;
         }
      }
+   else if(InpStrategy == STRAT_DONCHIAN_BREAKOUT && InpDonchianTrendFilter)
+     {
+      h_trend = iMA(_Symbol, g_tf, InpDonchianTrendPeriod, 0, MODE_EMA, PRICE_CLOSE);
+      if(h_trend == INVALID_HANDLE)
+        {
+         Print("ERROR: no se pudo crear la EMA de tendencia (Donchian)");
+         return INIT_FAILED;
+        }
+     }
 
    PrintFormat("forexbot v2 iniciado: estrategia=%s  simbolo=%s  TF=%s",
                StratName(), _Symbol, TFString(g_tf));
@@ -271,8 +290,20 @@ ENUM_SIGNAL SignalDonchian()
    double lower = iLow(_Symbol, g_tf, idxL);
    double high1 = iHigh(_Symbol, g_tf, 1);
    double low1  = iLow(_Symbol, g_tf, 1);
-   if(high1 > upper) return SIG_LONG;
-   if(low1  < lower) return SIG_SHORT;
+
+   // Filtro de tendencia: solo romper a favor de la EMA.
+   bool allowLong = true, allowShort = true;
+   if(InpDonchianTrendFilter)
+     {
+      double ema = IndVal(h_trend, 0, 1);
+      double c1  = iClose(_Symbol, g_tf, 1);
+      if(!Valid(ema)) return SIG_NONE;
+      allowLong  = (c1 > ema);
+      allowShort = (c1 < ema);
+     }
+
+   if(high1 > upper && allowLong)  return SIG_LONG;
+   if(low1  < lower && allowShort) return SIG_SHORT;
    return SIG_NONE;
   }
 
@@ -396,6 +427,69 @@ void OpenTrade(ENUM_SIGNAL sig)
    else
       PrintFormat("Fallo al enviar la orden: ret=%d  %s",
                   g_trade.ResultRetcode(), g_trade.ResultRetcodeDescription());
+  }
+
+//============================ Gestion de operacion abierta =========
+//  Break-even y trailing stop por ATR. Ataca el problema de ganadoras
+//  pequenas vs perdedoras grandes: protege ganancia y deja correr.
+void ManageOpenPositions()
+  {
+   if(!InpUseBreakEven && !InpUseTrailing)
+      return;
+   double atr = IndVal(h_atr, 0, 1);
+   if(!Valid(atr) || atr <= 0.0)
+      return;
+
+   double minDist = SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL) * _Point;
+   double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+   double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+     {
+      ulong tk = PositionGetTicket(i);
+      if(!PositionSelectByTicket(tk)) continue;
+      if(PositionGetInteger(POSITION_MAGIC) != InpMagic) continue;
+      if(PositionGetString(POSITION_SYMBOL) != _Symbol) continue;
+
+      long   type  = PositionGetInteger(POSITION_TYPE);
+      double entry = PositionGetDouble(POSITION_PRICE_OPEN);
+      double sl    = PositionGetDouble(POSITION_SL);
+      double tp    = PositionGetDouble(POSITION_TP);
+      double newSL = sl;
+
+      if(type == POSITION_TYPE_BUY)
+        {
+         double profit = bid - entry;
+         if(InpUseBreakEven && profit >= InpBreakEvenATR * atr)
+           {
+            double be = entry + InpBreakEvenLockATR * atr;
+            if(be > newSL) newSL = be;
+           }
+         if(InpUseTrailing && profit >= InpTrailStartATR * atr)
+           {
+            double tr = bid - InpTrailDistATR * atr;
+            if(tr > newSL) newSL = tr;
+           }
+         if(newSL > sl && (bid - newSL) >= minDist)
+            g_trade.PositionModify(tk, NormalizeDouble(newSL, _Digits), tp);
+        }
+      else // SELL
+        {
+         double profit = entry - ask;
+         if(InpUseBreakEven && profit >= InpBreakEvenATR * atr)
+           {
+            double be = entry - InpBreakEvenLockATR * atr;
+            if(sl == 0.0 || be < newSL) newSL = be;
+           }
+         if(InpUseTrailing && profit >= InpTrailStartATR * atr)
+           {
+            double tr = ask + InpTrailDistATR * atr;
+            if(sl == 0.0 || tr < newSL) newSL = tr;
+           }
+         if((sl == 0.0 || newSL < sl) && (newSL - ask) >= minDist)
+            g_trade.PositionModify(tk, NormalizeDouble(newSL, _Digits), tp);
+        }
+     }
   }
 
 //============================ Proteccion (prop firm) ===============
@@ -855,6 +949,8 @@ void OnTick()
    bool canTrade = true;
    if(InpUseProtection)
       canTrade = RiskGuard();
+
+   ManageOpenPositions();   // break-even + trailing en cada tick
 
    // Day trading: cierre de fin de dia (no overnight)
    if(InpCloseEndOfDay && AfterDailyClose())

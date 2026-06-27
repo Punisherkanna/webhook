@@ -69,6 +69,24 @@ gráficos.
 Así el bot **no deja trades abiertos overnight**. Opera en temporalidades
 intradía (M5/M15) — el preset usa **M15**.
 
+## Gestión de la operación (trailing + break-even)
+
+Para que las ganadoras puedan crecer y no queden más pequeñas que las
+perdedoras, el EA gestiona el stop de cada posición (grupo *Gestión de la
+operación*):
+
+| Parámetro            | Defecto | Qué hace                                                  |
+|----------------------|--------:|-----------------------------------------------------------|
+| `InpUseBreakEven`    | true    | Mueve el SL a break-even cuando la operación gana.        |
+| `InpBreakEvenATR`    | 1.0     | Activa el break-even tras este profit (en ATR).           |
+| `InpBreakEvenLockATR`| 0.1     | Cuánto bloquea por encima de la entrada al hacer BE (ATR).|
+| `InpUseTrailing`     | true    | Trailing stop por ATR (deja correr la ganancia).          |
+| `InpTrailStartATR`   | 1.5     | Empieza a seguir tras este profit (ATR).                  |
+| `InpTrailDistATR`    | 2.0     | Distancia del trailing (ATR).                             |
+
+Con esto, el objetivo (`InpAtrTarget`) se sube a 4.0 ATR para dejar correr, y el
+trailing protege la ganancia por el camino.
+
 ## Panel visual
 
 Panel oscuro con degradado que se refresca cada segundo y muestra: símbolo/TF,
@@ -101,21 +119,43 @@ Cuatro controles configurables (grupo *Protección*):
 - Para un **nuevo desafío**: carga el EA con `InpResetGuard = true` una vez y
   vuelve a `false`.
 
+> **Importante (regla de oro):** el riesgo por operación **no debe superar** el
+> corte de flotante por símbolo. Si arriesgas 2% pero el corte de flotante es
+> 1.9%×(1−margen)=1.71%, la protección cierra la operación **antes** de que
+> llegue su stop, generando pérdidas raras. Mantén `InpRiskPerTrade` ≤ flotante
+> efectivo (por eso los presets usan 0.5–1%).
+
 ## Presets (.set)
 
 En [`presets/`](presets/): `forexbot_XAUUSD.set`, `forexbot_EURUSD.set`,
 `forexbot_NZDCAD.set`. Todos en M15, day trading, con la protección activa.
 Cárgalos desde la pestaña *Entradas* del EA o del Strategy Tester (**Cargar**).
 
-## Optimizar / probar (MUY recomendado)
+## Optimizar / probar (IMPRESCINDIBLE)
 
-1. **Ver → Probador de estrategias** (**Ctrl+R**).
-2. Elige `forexbot`, el símbolo, **M15** y un rango de fechas.
-3. Usa **Optimización** para barrer `InpDonchianPeriod`, `InpAtrStop`,
-   `InpAtrTarget`, MACD, etc. y quedarte con lo que funciona en datos reales.
+Estas estrategias **no son rentables "de fábrica"**; hay que ajustarlas a cada
+símbolo con datos reales. Pasos:
+
+1. **Ver → Probador de estrategias** (**Ctrl+R**), modo *"Cada tick basado en
+   ticks reales"*.
+2. Usa un periodo **largo y representativo** (≥ 2–3 años, no 2 meses) que incluya
+   distintos regímenes de mercado. Reserva un tramo final para validar (out-of-sample).
+3. Activa **Optimización** y barre estos rangos como punto de partida:
+
+   | Parámetro          | Desde | Paso | Hasta |
+   |--------------------|------:|-----:|------:|
+   | `InpDonchianPeriod`| 15    | 5    | 60    |
+   | `InpAtrStop`       | 1.0   | 0.5  | 3.0   |
+   | `InpAtrTarget`     | 2.0   | 0.5  | 6.0   |
+   | `InpTrailStartATR` | 1.0   | 0.5  | 3.0   |
+   | `InpTrailDistATR`  | 1.0   | 0.5  | 4.0   |
+   | `InpMacdTrendPeriod` | 50  | 25   | 200   |
+
+4. Optimiza por **Factor de Beneficio** o *Custom*, y desconfía de resultados con
+   pocos trades. Valida el mejor set en el tramo out-of-sample y en otro símbolo.
 
 > Empieza **siempre** en cuenta **demo**. Trading apalancado = alto riesgo de
-> pérdida. Software educativo, sin garantías.
+> pérdida. Software educativo, **sin garantías de rentabilidad**.
 
 ## Notas técnicas
 
