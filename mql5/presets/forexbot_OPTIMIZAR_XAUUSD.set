@@ -1,0 +1,60 @@
+; ============================================================
+; forexbot v2 - OPTIMIZACION (XAUUSD M15, estrategia MACD)
+; Formato MT5:  Nombre=valor||inicio||paso||fin||Y(optimizar)/N
+; USO: Probador de estrategias -> pestana "Parametros de entrada" ->
+;      boton "Cargar" -> elige este .set. Marca Optimizacion =
+;      "Algoritmo genetico rapido". Optimiza por "Factor de beneficio"
+;      o "Factor de recuperacion". Modo: "Cada tick basado en ticks reales".
+; Proteccion DESACTIVADA a proposito: aqui medimos el EDGE puro.
+; ============================================================
+InpStrategy=1
+InpTimeframe=15
+InpMagic=234099
+InpNewBarOnly=true
+InpDeviation=50
+InpComment=fxbot-opt
+InpRiskPerTrade=0.005
+InpMaxLots=10.0
+InpMaxPositions=1
+InpAtrPeriod=14
+InpAtrStop=1.5||1.0||0.5||3.0||Y
+InpAtrTarget=4.0
+InpCloseEndOfDay=true
+InpCloseHour=23
+InpCloseMinute=30
+InpUseSession=false
+InpSessionStart=7
+InpSessionEnd=20
+InpDonchianPeriod=20
+InpDonchianTrendFilter=true
+InpDonchianTrendPeriod=100
+InpMacdFast=12
+InpMacdSlow=26
+InpMacdSignal=9
+InpMacdTrendPeriod=100||50||25||200||Y
+InpUseBreakEven=true
+InpBreakEvenATR=1.5||1.0||0.5||2.5||Y
+InpBreakEvenLockATR=0.0
+InpUseTrailing=true
+InpTrailStartATR=2.0||1.0||0.5||3.0||Y
+InpTrailDistATR=3.0||1.5||0.5||4.0||Y
+InpExitOnReverse=true
+InpUseFixedTP=false
+InpUsePartial=true
+InpPartialAtR=1.0||0.5||0.5||2.0||Y
+InpPartialPct=50.0
+InpUseAdx=true
+InpAdxPeriod=14
+InpAdxMin=22.0||15.0||5.0||35.0||Y
+InpUseProtection=false
+InpMaxFloatDDPct=0.0
+InpMaxDailyDDPct=0.0
+InpMaxTotalDDPct=10.0
+InpDailyBase=0
+InpSafetyMarginPct=10.0
+InpDailyProfitTarget=0.0
+InpCloseOnTarget=false
+InpHaltDayOnFloat=false
+InpAlertOnBreach=false
+InpResetGuard=false
+InpShowPanel=false
