@@ -1,9 +1,6 @@
-; forexbot v2 - DIAGNOSTICO de la estrategia (para BACKTEST/optimizacion)
-; Mide el edge REAL de la estrategia SIN los topes de prop firm que mutilan
-; las operaciones. NO usar en cuenta de desafio: aqui el objetivo diario y el
-; corte de flotante estan DESACTIVADOS a proposito.
-; Aplica a cualquier simbolo (Donchian). Cambia InpStrategy=1 para MACD.
-InpStrategy=0
+; forexbot v2 - DIAGNOSTICO (BACKTEST/optimizacion, SIN topes prop firm)
+; Mide el edge REAL. NO usar en desafio. Cambia InpStrategy 0=Donchian 1=MACD.
+InpStrategy=1
 InpTimeframe=15
 InpMagic=234099
 InpNewBarOnly=true
@@ -21,6 +18,20 @@ InpCloseMinute=30
 InpUseSession=false
 InpSessionStart=7
 InpSessionEnd=20
+InpUseBreakEven=true
+InpBreakEvenATR=1.5
+InpBreakEvenLockATR=0.0
+InpUseTrailing=true
+InpTrailStartATR=2.0
+InpTrailDistATR=3.0
+InpExitOnReverse=true
+InpUseFixedTP=false
+InpUsePartial=true
+InpPartialAtR=1.0
+InpPartialPct=50.0
+InpUseAdx=true
+InpAdxPeriod=14
+InpAdxMin=22.0
 InpDonchianPeriod=20
 InpDonchianTrendFilter=true
 InpDonchianTrendPeriod=100
@@ -28,12 +39,6 @@ InpMacdFast=12
 InpMacdSlow=26
 InpMacdSignal=9
 InpMacdTrendPeriod=100
-InpUseBreakEven=true
-InpBreakEvenATR=1.0
-InpBreakEvenLockATR=0.1
-InpUseTrailing=true
-InpTrailStartATR=1.5
-InpTrailDistATR=2.0
 InpUseProtection=true
 InpMaxFloatDDPct=0.0
 InpMaxDailyDDPct=0.0

@@ -1,5 +1,5 @@
-; forexbot v2 - EURUSD - DAY TRADING
-; MACD trend, riesgo 1%, trailing+BE. Sin overnight.
+; forexbot v2 - EURUSD - DAY TRADING (salida por reverso + parcial + ADX)
+; MACD trend, riesgo 1%.
 InpStrategy=1
 InpTimeframe=15
 InpMagic=234002
@@ -18,6 +18,20 @@ InpCloseMinute=30
 InpUseSession=false
 InpSessionStart=7
 InpSessionEnd=20
+InpUseBreakEven=true
+InpBreakEvenATR=1.5
+InpBreakEvenLockATR=0.0
+InpUseTrailing=true
+InpTrailStartATR=2.0
+InpTrailDistATR=3.0
+InpExitOnReverse=true
+InpUseFixedTP=false
+InpUsePartial=true
+InpPartialAtR=1.0
+InpPartialPct=50.0
+InpUseAdx=true
+InpAdxPeriod=14
+InpAdxMin=22.0
 InpDonchianPeriod=20
 InpDonchianTrendFilter=true
 InpDonchianTrendPeriod=100
@@ -25,12 +39,6 @@ InpMacdFast=12
 InpMacdSlow=26
 InpMacdSignal=9
 InpMacdTrendPeriod=100
-InpUseBreakEven=true
-InpBreakEvenATR=1.0
-InpBreakEvenLockATR=0.1
-InpUseTrailing=true
-InpTrailStartATR=1.5
-InpTrailDistATR=2.0
 InpUseProtection=true
 InpMaxFloatDDPct=1.9
 InpMaxDailyDDPct=3.99

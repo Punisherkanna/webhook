@@ -84,8 +84,23 @@ operación*):
 | `InpTrailStartATR`   | 1.5     | Empieza a seguir tras este profit (ATR).                  |
 | `InpTrailDistATR`    | 2.0     | Distancia del trailing (ATR).                             |
 
-Con esto, el objetivo (`InpAtrTarget`) se sube a 4.0 ATR para dejar correr, y el
-trailing protege la ganancia por el camino.
+### Salidas y filtros de calidad
+
+| Parámetro          | Defecto | Qué hace                                                    |
+|--------------------|--------:|-------------------------------------------------------------|
+| `InpExitOnReverse` | true    | Cierra al aparecer señal contraria → deja correr la tendencia hasta agotarse (en vez de un TP fijo que casi nunca se toca). |
+| `InpUseFixedTP`    | false   | Si `true`, usa TP fijo por ATR; si `false`, la salida la dan reverse/trailing. |
+| `InpUsePartial`    | true    | Cierre parcial: asegura parte de la ganancia y deja correr el resto. |
+| `InpPartialAtR`    | 1.0     | Toma el parcial tras este profit (en ATR).                  |
+| `InpPartialPct`    | 50      | % del volumen a cerrar en el parcial.                       |
+| `InpUseAdx`        | true    | Filtro de fuerza de tendencia: no entra en mercado lateral. |
+| `InpAdxMin`        | 22      | ADX mínimo para permitir entradas.                          |
+
+**Por qué estos cambios** (según tu backtest de 2.5 años en oro): tenías 56% de
+aciertos pero ganancia media (+30) menor que la pérdida media (−44) → el
+break-even y el TT cortaban las ganadoras mientras las perdedoras llegaban al
+stop completo. Salir por **reverso** (no por TP fijo) deja correr las tendencias,
+el **cierre parcial** mejora el ratio, y el **ADX** evita las entradas en rango.
 
 ## Panel visual
 
@@ -155,8 +170,11 @@ símbolo con datos reales. Pasos:
    | `InpAtrStop`       | 1.0   | 0.5  | 3.0   |
    | `InpAtrTarget`     | 2.0   | 0.5  | 6.0   |
    | `InpTrailStartATR` | 1.0   | 0.5  | 3.0   |
-   | `InpTrailDistATR`  | 1.0   | 0.5  | 4.0   |
+   | `InpTrailDistATR`  | 1.5   | 0.5  | 4.0   |
    | `InpMacdTrendPeriod` | 50  | 25   | 200   |
+   | `InpAdxMin`        | 15    | 3    | 35    |
+   | `InpPartialAtR`    | 0.5   | 0.5  | 2.0   |
+   | `InpAtrStop`       | 1.0   | 0.5  | 3.0   |
 
 4. Optimiza por **Factor de Beneficio** o *Custom*, y desconfía de resultados con
    pocos trades. Valida el mejor set en el tramo out-of-sample y en otro símbolo.

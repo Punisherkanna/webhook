@@ -68,12 +68,22 @@ input int InpMacdSignal      = 9;   // EMA de la senal MACD
 input int InpMacdTrendPeriod = 100; // EMA del filtro de tendencia
 
 input group "Gestion de la operacion (trailing)"
-input bool   InpUseBreakEven   = true; // Mover SL a break-even
-input double InpBreakEvenATR    = 1.0; // Activar BE tras este profit (en ATR)
-input double InpBreakEvenLockATR = 0.1;// Bloqueo sobre la entrada al hacer BE (ATR)
-input bool   InpUseTrailing     = true;// Trailing stop por ATR
-input double InpTrailStartATR    = 1.5;// Empezar a seguir tras este profit (ATR)
-input double InpTrailDistATR      = 2.0;// Distancia del trailing (ATR)
+input bool   InpUseBreakEven    = true; // Mover SL a break-even
+input double InpBreakEvenATR     = 1.5; // Activar BE tras este profit (en ATR)
+input double InpBreakEvenLockATR = 0.0; // Bloqueo sobre la entrada al hacer BE (ATR)
+input bool   InpUseTrailing      = true;// Trailing stop por ATR
+input double InpTrailStartATR     = 2.0;// Empezar a seguir tras este profit (ATR)
+input double InpTrailDistATR       = 3.0;// Distancia del trailing (ATR, holgado: deja correr)
+
+input group "Salidas y filtros"
+input bool   InpExitOnReverse = true;  // Salir si aparece senal contraria (deja correr la tendencia)
+input bool   InpUseFixedTP    = false; // Usar TP fijo por ATR (false = salir por reverse/trailing)
+input bool   InpUsePartial    = true;  // Cierre parcial (asegura parte, deja correr el resto)
+input double InpPartialAtR     = 1.0;  // Tomar parcial tras este profit (en ATR)
+input double InpPartialPct      = 50.0; // Porcentaje del volumen a cerrar en el parcial
+input bool   InpUseAdx        = true;  // Filtro de fuerza de tendencia (ADX)
+input int    InpAdxPeriod      = 14;   // Periodo ADX
+input double InpAdxMin          = 22.0; // ADX minimo para entrar
 
 input group "Proteccion (prop firm)"
 input bool   InpUseProtection     = true;  // Activar limites de proteccion
@@ -112,6 +122,9 @@ datetime        g_lastBar = 0;
 int h_atr   = INVALID_HANDLE;
 int h_macd  = INVALID_HANDLE;
 int h_trend = INVALID_HANDLE;
+int h_adx   = INVALID_HANDLE;
+
+ulong g_partialTicket = 0;   // ticket al que ya se le hizo cierre parcial
 
 //--- Estado de proteccion (persistido en variables globales del terminal)
 double   g_refBalance      = 0.0;   // balance inicial (referencia del DD total)
@@ -175,6 +188,16 @@ int OnInit()
       return INIT_FAILED;
      }
 
+   if(InpUseAdx)
+     {
+      h_adx = iADX(_Symbol, g_tf, InpAdxPeriod);
+      if(h_adx == INVALID_HANDLE)
+        {
+         Print("ERROR: no se pudo crear el handle de ADX");
+         return INIT_FAILED;
+        }
+     }
+
    if(InpStrategy == STRAT_MACD_TREND)
      {
       h_macd  = iMACD(_Symbol, g_tf, InpMacdFast, InpMacdSlow, InpMacdSignal, PRICE_CLOSE);
@@ -212,7 +235,7 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
   {
-   int handles[] = {h_atr, h_macd, h_trend};
+   int handles[] = {h_atr, h_macd, h_trend, h_adx};
    for(int i = 0; i < ArraySize(handles); i++)
       if(handles[i] != INVALID_HANDLE)
          IndicatorRelease(handles[i]);
@@ -324,9 +347,38 @@ ENUM_SIGNAL SignalMACD()
 
 ENUM_SIGNAL GetSignal()
   {
+   // Filtro de fuerza de tendencia: no entrar en mercado lateral.
+   if(InpUseAdx)
+     {
+      double adx = IndVal(h_adx, 0, 1);
+      if(!Valid(adx) || adx < InpAdxMin)
+         return SIG_NONE;
+     }
    if(InpStrategy == STRAT_MACD_TREND)
       return SignalMACD();
    return SignalDonchian();
+  }
+
+//--- Senal de SALIDA por reverso (deja correr la tendencia hasta agotarse)
+ENUM_SIGNAL ReverseExitSignal()
+  {
+   if(InpStrategy == STRAT_MACD_TREND)
+     {
+      double m1 = IndVal(h_macd, 0, 1), g1 = IndVal(h_macd, 1, 1);
+      if(!Valid(m1) || !Valid(g1)) return SIG_NONE;
+      if(m1 < g1) return SIG_SHORT; // momentum se gira a la baja -> cerrar largos
+      if(m1 > g1) return SIG_LONG;  // momentum se gira al alza -> cerrar cortos
+      return SIG_NONE;
+     }
+   // Donchian: salir si el precio rompe el extremo opuesto de medio canal.
+   int half = MathMax(2, InpDonchianPeriod / 2);
+   int ih = iHighest(_Symbol, g_tf, MODE_HIGH, half, 1);
+   int il = iLowest(_Symbol, g_tf, MODE_LOW, half, 1);
+   if(ih < 0 || il < 0) return SIG_NONE;
+   double c1 = iClose(_Symbol, g_tf, 1);
+   if(c1 < iLow(_Symbol, g_tf, il)) return SIG_SHORT;
+   if(c1 > iHigh(_Symbol, g_tf, ih)) return SIG_LONG;
+   return SIG_NONE;
   }
 
 //+------------------------------------------------------------------+
@@ -407,6 +459,8 @@ void OpenTrade(ENUM_SIGNAL sig)
      }
    sl = NormalizeDouble(sl, _Digits);
    tp = NormalizeDouble(tp, _Digits);
+   if(!InpUseFixedTP)
+      tp = 0.0;   // sin TP fijo: la salida la dan reverse/trailing
 
    double lots = CalcLots(MathAbs(price - sl));
    if(lots <= 0.0)
@@ -455,7 +509,26 @@ void ManageOpenPositions()
       double entry = PositionGetDouble(POSITION_PRICE_OPEN);
       double sl    = PositionGetDouble(POSITION_SL);
       double tp    = PositionGetDouble(POSITION_TP);
+      double vol   = PositionGetDouble(POSITION_VOLUME);
       double newSL = sl;
+
+      // Cierre parcial: asegura parte de la ganancia y deja correr el resto.
+      if(InpUsePartial && g_partialTicket != tk)
+        {
+         double prof = (type == POSITION_TYPE_BUY) ? (bid - entry) : (entry - ask);
+         if(prof >= InpPartialAtR * atr)
+           {
+            double step  = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);
+            double vmin  = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
+            double close = vol * InpPartialPct / 100.0;
+            if(step > 0) close = MathFloor(close / step) * step;
+            if(close >= vmin && (vol - close) >= vmin)
+              {
+               if(g_trade.PositionClosePartial(tk, close))
+                  g_partialTicket = tk;
+              }
+           }
+        }
 
       if(type == POSITION_TYPE_BUY)
         {
@@ -964,6 +1037,23 @@ void OnTick()
 
    if(InpNewBarOnly && !IsNewBar())
       return;
+
+   // Salida por senal contraria (deja correr la tendencia hasta agotarse)
+   if(InpExitOnReverse && CountMyPositions() > 0)
+     {
+      ENUM_SIGNAL rev = ReverseExitSignal();
+      for(int i = PositionsTotal() - 1; i >= 0; i--)
+        {
+         ulong tk = PositionGetTicket(i);
+         if(!PositionSelectByTicket(tk)) continue;
+         if(PositionGetInteger(POSITION_MAGIC) != InpMagic) continue;
+         if(PositionGetString(POSITION_SYMBOL) != _Symbol) continue;
+         long type = PositionGetInteger(POSITION_TYPE);
+         if((type == POSITION_TYPE_BUY  && rev == SIG_SHORT) ||
+            (type == POSITION_TYPE_SELL && rev == SIG_LONG))
+            g_trade.PositionClose(tk);
+        }
+     }
 
    if(!canTrade)
       return;
