@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- SEO -->
+  <title>Jose Vasquez | Pacer y Corredor en República Dominicana — 5K, 10K, 21K</title>
+  <meta name="description" content="Servicios de pacer para corredores principiantes e intermedios en República Dominicana: 5K sub-20, 10K sub-45 y más. Corre tu mejor carrera con Jose Vasquez — 10K en 38:35.">
+  <meta name="keywords" content="pacer república dominicana, pacer santo domingo, correr 5k sub 20, correr 10k sub 45, entrenamiento running, corredor dominicano, liebre carrera, running RD">
+  <meta name="author" content="Jose Vasquez">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://punisherkanna.github.io/webhook/">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="es_DO">
+  <meta property="og:site_name" content="Jose Vasquez Running">
+  <meta property="og:title" content="Jose Vasquez | Pacer y Corredor — 5K, 10K, 21K">
+  <meta property="og:description" content="Corre tu mejor carrera. Servicios de pacer para 5K, 10K y media maratón en República Dominicana. 10K en 38:35 — de 1:15 a 38:35 en menos de dos años.">
+  <meta property="og:url" content="https://punisherkanna.github.io/webhook/">
+  <meta property="og:image" content="https://punisherkanna.github.io/webhook/assets/img/jose-hero.jpg">
+  <meta property="og:image:alt" content="Jose Vasquez corriendo un 10K con el dorsal 53">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Jose Vasquez | Pacer y Corredor — 5K, 10K, 21K">
+  <meta name="twitter:description" content="Servicios de pacer para corredores principiantes e intermedios en República Dominicana. Alcanza tu meta: 5K sub-20, 10K sub-45 y más.">
+  <meta name="twitter:image" content="https://punisherkanna.github.io/webhook/assets/img/jose-hero.jpg">
+
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏃</text></svg>">
+
+  <!-- Datos estructurados -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": "Jose Vasquez",
+    "jobTitle": "Pacer y corredor de ruta",
+    "description": "Corredor dominicano y pacer para corredores principiantes e intermedios. 10K en 38:35.",
+    "image": "https://punisherkanna.github.io/webhook/assets/img/jose-hero.jpg",
+    "url": "https://punisherkanna.github.io/webhook/",
+    "telephone": "+1-809-458-9751",
+    "address": {
+      "@type": "PostalAddress",
+      "addressCountry": "DO"
+    },
+    "sameAs": [
+      "https://www.instagram.com/jvasquez234",
+      "https://www.strava.com/athletes/145304552"
+    ],
+    "makesOffer": {
+      "@type": "Offer",
+      "itemOffered": {
+        "@type": "Service",
+        "name": "Servicio de pacer para carreras 5K, 10K y media maratón",
+        "description": "Acompañamiento a ritmo constante para lograr metas como 5K sub-20 y 10K sub-45, dirigido a corredores principiantes e intermedios.",
+        "areaServed": {
+          "@type": "Country",
+          "name": "República Dominicana"
+        }
+      }
+    }
+  }
+  </script>
+
+  <style>
+    :root {
+      --bg: #0c0c11;
+      --surface: #15151d;
+      --surface-2: #1c1c27;
+      --border: #2a2a38;
+      --ink: #f4f4f6;
+      --ink-2: #b8b8c4;
+      --ink-3: #83838f;
+      --accent: #ff4d8d;
+      --accent-soft: rgba(255, 77, 141, .12);
+      --lime: #c9f24d;
+      --lime-soft: rgba(201, 242, 77, .1);
+      --radius: 16px;
+      --wrap: 1080px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    img { max-width: 100%; display: block; }
+    a { color: inherit; }
+
+    .wrap { max-width: var(--wrap); margin: 0 auto; padding: 0 20px; }
+
+    /* ---------- Nav ---------- */
+    header {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(12, 12, 17, .85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav {
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px;
+    }
+    .brand {
+      font-weight: 800; font-size: 1.05rem; text-decoration: none; letter-spacing: .02em;
+    }
+    .brand span { color: var(--accent); }
+    .nav-links { display: flex; gap: 26px; list-style: none; }
+    .nav-links a {
+      text-decoration: none; color: var(--ink-2); font-size: .92rem; font-weight: 500;
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--ink); }
+    .nav-cta {
+      background: var(--accent); color: #fff !important; padding: 8px 16px;
+      border-radius: 99px; font-weight: 700 !important;
+    }
+    .nav-toggle { display: none; background: none; border: 0; color: var(--ink); font-size: 1.6rem; cursor: pointer; }
+
+    @media (max-width: 760px) {
+      .nav-toggle { display: block; }
+      .nav-links {
+        display: none; position: absolute; top: 64px; left: 0; right: 0;
+        flex-direction: column; gap: 0;
+        background: var(--surface); border-bottom: 1px solid var(--border);
+      }
+      .nav-links.open { display: flex; }
+      .nav-links li { border-top: 1px solid var(--border); }
+      .nav-links a { display: block; padding: 15px 20px; }
+      .nav-cta { border-radius: 0; text-align: center; }
+    }
+
+    /* ---------- Hero ---------- */
+    .hero { padding: 72px 0 56px; }
+    .hero-grid {
+      display: grid; grid-template-columns: 1.15fr .85fr; gap: 48px; align-items: center;
+    }
+    .kicker {
+      display: inline-block; font-size: .8rem; font-weight: 700; letter-spacing: .12em;
+      text-transform: uppercase; color: var(--lime);
+      background: var(--lime-soft); border: 1px solid rgba(201,242,77,.25);
+      padding: 5px 14px; border-radius: 99px; margin-bottom: 18px;
+    }
+    h1 {
+      font-size: clamp(2.3rem, 5.5vw, 3.6rem); line-height: 1.08;
+      font-weight: 800; letter-spacing: -.02em; margin-bottom: 18px;
+    }
+    h1 em { font-style: normal; color: var(--accent); }
+    .hero p.lead { color: var(--ink-2); font-size: 1.12rem; max-width: 34em; margin-bottom: 28px; }
+    .btn-row { display: flex; gap: 14px; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 9px;
+      padding: 13px 26px; border-radius: 99px; text-decoration: none;
+      font-weight: 700; font-size: .98rem; transition: transform .15s, box-shadow .15s;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn-primary { background: #25d366; color: #06280f; }
+    .btn-primary:hover { box-shadow: 0 8px 24px rgba(37, 211, 102, .3); }
+    .btn-ghost { border: 1.5px solid var(--border); color: var(--ink); background: var(--surface); }
+    .btn-ghost:hover { border-color: var(--accent); }
+    .btn svg { width: 19px; height: 19px; flex-shrink: 0; }
+
+    .hero-photo {
+      position: relative; border-radius: var(--radius); overflow: hidden;
+      border: 1px solid var(--border);
+      box-shadow: 0 24px 60px rgba(0,0,0,.5);
+    }
+    .hero-photo img { aspect-ratio: 1 / 1; object-fit: cover; }
+    .hero-badge {
+      position: absolute; left: 14px; bottom: 14px;
+      background: rgba(12,12,17,.82); backdrop-filter: blur(8px);
+      border: 1px solid var(--border); border-radius: 12px;
+      padding: 10px 16px; font-size: .85rem; color: var(--ink-2);
+    }
+    .hero-badge strong { color: var(--ink); display: block; font-size: 1.05rem; }
+
+    /* ---------- Stat tiles ---------- */
+    .stats {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+      margin-top: 52px;
+    }
+    .stat {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 22px 20px;
+    }
+    .stat .label { font-size: .82rem; color: var(--ink-3); font-weight: 500; }
+    .stat .value {
+      font-size: 2rem; font-weight: 700; letter-spacing: -.02em; margin-top: 2px;
+    }
+    .stat .sub { font-size: .82rem; color: var(--accent); font-weight: 600; margin-top: 2px; }
+
+    @media (max-width: 860px) {
+      .hero-grid { grid-template-columns: 1fr; }
+      .stats { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* ---------- Sections ---------- */
+    section { padding: 76px 0; }
+    section:nth-of-type(even) { background: #101017; }
+    .sec-head { max-width: 620px; margin-bottom: 44px; }
+    .sec-head .kicker { margin-bottom: 12px; }
+    h2 { font-size: clamp(1.7rem, 3.6vw, 2.4rem); font-weight: 800; letter-spacing: -.02em; margin-bottom: 12px; }
+    .sec-head p { color: var(--ink-2); }
+
+    /* Sobre mí */
+    .about-grid { display: grid; grid-template-columns: .9fr 1.1fr; gap: 48px; align-items: center; }
+    .about-grid img { border-radius: var(--radius); border: 1px solid var(--border); }
+    .about-copy p { color: var(--ink-2); margin-bottom: 16px; }
+    .about-copy strong { color: var(--ink); }
+    .quote {
+      border-left: 3px solid var(--accent); padding: 4px 0 4px 18px;
+      font-size: 1.15rem; font-weight: 600; color: var(--ink); margin: 22px 0;
+    }
+    @media (max-width: 860px) { .about-grid { grid-template-columns: 1fr; } }
+
+    /* Servicios */
+    .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 28px 24px;
+      display: flex; flex-direction: column;
+      transition: border-color .2s, transform .2s;
+    }
+    .card:hover { border-color: var(--accent); transform: translateY(-4px); }
+    .card.featured { border-color: var(--accent); background: linear-gradient(180deg, var(--accent-soft), var(--surface) 60%); }
+    .card .dist { font-size: .82rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--lime); }
+    .card h3 { font-size: 1.45rem; font-weight: 800; margin: 6px 0 4px; }
+    .card .pace { color: var(--accent); font-weight: 700; font-size: .95rem; margin-bottom: 14px; }
+    .card ul { list-style: none; margin-bottom: 22px; }
+    .card li { color: var(--ink-2); font-size: .93rem; padding: 5px 0 5px 26px; position: relative; }
+    .card li::before {
+      content: "✓"; position: absolute; left: 0; color: var(--lime); font-weight: 700;
+    }
+    .card .btn { margin-top: auto; justify-content: center; font-size: .92rem; padding: 11px 20px; }
+    .services-note { margin-top: 26px; color: var(--ink-3); font-size: .92rem; text-align: center; }
+    .services-note a { color: var(--accent); font-weight: 600; }
+    @media (max-width: 860px) { .cards { grid-template-columns: 1fr; } }
+
+    /* Entrenamientos */
+    .train-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+    .train {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 24px;
+    }
+    .train .tag {
+      display: inline-block; font-size: .74rem; font-weight: 700; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--accent); background: var(--accent-soft);
+      padding: 3px 10px; border-radius: 99px; margin-bottom: 12px;
+    }
+    .train h3 { font-size: 1.15rem; font-weight: 700; margin-bottom: 6px; }
+    .train p { color: var(--ink-2); font-size: .92rem; }
+    .train .metrics { display: flex; gap: 24px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+    .train .metrics div span { display: block; font-size: .76rem; color: var(--ink-3); }
+    .train .metrics div b { font-size: 1.12rem; font-weight: 700; }
+    .strava-cta { text-align: center; margin-top: 36px; }
+    .btn-strava { background: #fc4c02; color: #fff; }
+    .btn-strava:hover { box-shadow: 0 8px 24px rgba(252, 76, 2, .35); }
+    @media (max-width: 760px) { .train-grid { grid-template-columns: 1fr; } }
+
+    /* Logros / galería */
+    .gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .gallery figure {
+      border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border);
+      position: relative; background: var(--surface);
+    }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; aspect-ratio: 4 / 5; transition: transform .3s; }
+    .gallery figure:hover img { transform: scale(1.03); }
+    .gallery figcaption {
+      position: absolute; left: 0; right: 0; bottom: 0;
+      padding: 34px 16px 14px; font-size: .86rem; font-weight: 600;
+      background: linear-gradient(transparent, rgba(0,0,0,.85));
+    }
+    @media (max-width: 760px) { .gallery { grid-template-columns: 1fr; } .gallery img { aspect-ratio: auto; } }
+
+    /* Contacto */
+    .contact-box {
+      background: linear-gradient(135deg, var(--accent-soft), var(--surface));
+      border: 1px solid var(--border); border-radius: 24px;
+      padding: 56px 32px; text-align: center;
+    }
+    .contact-box h2 { margin-bottom: 10px; }
+    .contact-box p { color: var(--ink-2); max-width: 32em; margin: 0 auto 30px; }
+    .contact-links { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+    footer {
+      border-top: 1px solid var(--border); padding: 28px 0; text-align: center;
+      color: var(--ink-3); font-size: .85rem;
+    }
+    footer a { color: var(--ink-2); text-decoration: none; }
+    footer a:hover { color: var(--accent); }
+
+    /* WhatsApp flotante */
+    .wa-float {
+      position: fixed; right: 18px; bottom: 18px; z-index: 60;
+      width: 56px; height: 56px; border-radius: 50%;
+      background: #25d366; display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 8px 24px rgba(0,0,0,.4); transition: transform .15s;
+    }
+    .wa-float:hover { transform: scale(1.08); }
+    .wa-float svg { width: 30px; height: 30px; fill: #fff; }
+
+    /* Reveal */
+    .reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
+    .reveal.in { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .reveal { opacity: 1; transform: none; transition: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="wrap nav">
+      <a class="brand" href="#inicio">JOSE<span>VASQUEZ</span></a>
+      <button class="nav-toggle" aria-label="Abrir menú" aria-expanded="false">☰</button>
+      <ul class="nav-links" id="menu">
+        <li><a href="#sobre-mi">Sobre mí</a></li>
+        <li><a href="#servicios">Servicios</a></li>
+        <li><a href="#entrenamientos">Entrenamientos</a></li>
+        <li><a href="#logros">Logros</a></li>
+        <li><a href="#contacto" class="nav-cta">Contáctame</a></li>
+      </ul>
+    </div>
+  </header>
+
+  <main id="inicio">
+
+    <!-- ============ HERO ============ -->
+    <section class="hero" style="background: radial-gradient(900px 500px at 80% -10%, rgba(255,77,141,.14), transparent);">
+      <div class="wrap">
+        <div class="hero-grid">
+          <div>
+            <span class="kicker">Pacer · 5K · 10K · 21K</span>
+            <h1>Corre tu mejor carrera. <em>Yo marco el ritmo.</em></h1>
+            <p class="lead">
+              Soy Jose Vasquez, corredor de ruta en República Dominicana. Acompaño a corredores
+              principiantes e intermedios como <strong>pacer</strong> para que logren su meta:
+              5K sub-20, 10K sub-45 y más. Tú pones las ganas, yo pongo el ritmo exacto.
+            </p>
+            <div class="btn-row">
+              <a class="btn btn-primary" href="https://wa.me/18094589751?text=Hola%20Jose%2C%20me%20interesa%20tu%20servicio%20de%20pacer" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.511-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.884 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                Reserva por WhatsApp
+              </a>
+              <a class="btn btn-ghost" href="#servicios">Ver servicios</a>
+            </div>
+          </div>
+          <div class="hero-photo">
+            <img src="assets/img/jose-hero.jpg" alt="Jose Vasquez corriendo un 10K con el dorsal 53 y camiseta de Hybrid Club" width="1600" height="1598" fetchpriority="high">
+            <div class="hero-badge"><strong>38:35</strong>10K · Carrera del Mango</div>
+          </div>
+        </div>
+
+        <!-- KPI / stat tiles -->
+        <div class="stats reveal">
+          <div class="stat">
+            <div class="label">PR 10K</div>
+            <div class="value">38:35</div>
+            <div class="sub">3:49 /km</div>
+          </div>
+          <div class="stat">
+            <div class="label">Test 3000m</div>
+            <div class="value">11:05</div>
+            <div class="sub">3:41 /km</div>
+          </div>
+          <div class="stat">
+            <div class="label">Mejora en 10K</div>
+            <div class="value">−36:51</div>
+            <div class="sub">en 20 meses</div>
+          </div>
+          <div class="stat">
+            <div class="label">Volumen semanal</div>
+            <div class="value">50+ km</div>
+            <div class="sub">entrenando para competir</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SOBRE MÍ ============ -->
+    <section id="sobre-mi">
+      <div class="wrap">
+        <div class="about-grid">
+          <img class="reveal" src="assets/img/jose-progreso.jpg" alt="Comparación del progreso de Jose Vasquez: de 10K en 1:15:26 en agosto 2024 a 38:35 en abril 2026" loading="lazy" width="1080" height="1350">
+          <div class="about-copy reveal">
+            <span class="kicker">Sobre mí</span>
+            <h2>De 1:15:26 a 38:35 en el 10K</h2>
+            <p>
+              Mi primer 10K, en agosto de 2024, lo terminé en <strong>1 hora y 15 minutos</strong>.
+              Veinte meses después crucé la meta de la Carrera del Mango en <strong>38:35</strong>,
+              a 3:49 por kilómetro. No fue talento: fue constancia, estructura y aprender a
+              respetar cada ritmo de entrenamiento.
+            </p>
+            <p class="quote">"One day or day one. Un día lo decidí, y ese fue el día uno."</p>
+            <p>
+              Ese camino es exactamente el que recorren los corredores principiantes e intermedios
+              a los que hoy acompaño. Sé lo que se siente pelear por bajar de 60, de 50 y de 45
+              minutos, porque pasé por cada una de esas barreras. Como pacer, mi trabajo es que tú
+              las rompas <strong>sin quemarte en el primer kilómetro y sin dejar nada en el último</strong>.
+            </p>
+            <p>
+              Entreno a diario en República Dominicana — fondos, intervalos, tempo, VO2max — y todo
+              queda registrado en mi <a href="https://www.strava.com/athletes/145304552" target="_blank" rel="noopener" style="color:var(--accent); font-weight:600;">Strava</a>.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SERVICIOS ============ -->
+    <section id="servicios">
+      <div class="wrap">
+        <div class="sec-head reveal">
+          <span class="kicker">Servicios de pacer</span>
+          <h2>Tu meta, mi ritmo</h2>
+          <p>
+            Corro contigo tu carrera objetivo marcando el ritmo exacto de principio a fin.
+            Ideal para corredores principiantes e intermedios que buscan su primera gran marca.
+          </p>
+        </div>
+        <div class="cards">
+          <div class="card reveal">
+            <span class="dist">5K</span>
+            <h3>5K por objetivo</h3>
+            <div class="pace">Sub-30 · Sub-25 · Sub-20</div>
+            <ul>
+              <li>Ritmos de 6:00, 5:00 o 4:00 /km sostenidos</li>
+              <li>Estrategia de carrera previa por WhatsApp</li>
+              <li>Manejo de la salida y del último kilómetro</li>
+              <li>Motivación constante durante la carrera</li>
+            </ul>
+            <a class="btn btn-ghost" href="https://wa.me/18094589751?text=Hola%20Jose%2C%20quiero%20un%20pacer%20para%20un%205K" target="_blank" rel="noopener">Consultar 5K</a>
+          </div>
+          <div class="card featured reveal">
+            <span class="dist">10K — el más pedido</span>
+            <h3>10K por objetivo</h3>
+            <div class="pace">Sub-50 · Sub-45 · Sub-40</div>
+            <ul>
+              <li>Ritmos de 5:00, 4:30 o 4:00 /km sostenidos</li>
+              <li>Plan de parciales kilómetro a kilómetro</li>
+              <li>Recordatorios de hidratación en ruta</li>
+              <li>Cierre controlado para tu mejor sprint final</li>
+            </ul>
+            <a class="btn btn-primary" href="https://wa.me/18094589751?text=Hola%20Jose%2C%20quiero%20un%20pacer%20para%20un%2010K" target="_blank" rel="noopener">Consultar 10K</a>
+          </div>
+          <div class="card reveal">
+            <span class="dist">21K y entrenamientos</span>
+            <h3>Media maratón y más</h3>
+            <div class="pace">Objetivo personalizado</div>
+            <ul>
+              <li>Pacer para 21K según tu marca objetivo</li>
+              <li>Acompañamiento en entrenamientos de calidad</li>
+              <li>Intervalos, tempo y fondos con compañía</li>
+              <li>Asesoría de ritmos para tu próxima carrera</li>
+            </ul>
+            <a class="btn btn-ghost" href="https://wa.me/18094589751?text=Hola%20Jose%2C%20me%20interesa%20un%20servicio%20personalizado" target="_blank" rel="noopener">Consultar</a>
+          </div>
+        </div>
+        <p class="services-note">
+          ¿Tu meta no está en la lista? Escríbeme por <a href="https://wa.me/18094589751" target="_blank" rel="noopener">WhatsApp</a> y armamos un plan a tu medida.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ ENTRENAMIENTOS ============ -->
+    <section id="entrenamientos">
+      <div class="wrap">
+        <div class="sec-head reveal">
+          <span class="kicker">Entrenamientos</span>
+          <h2>Así entreno cada semana</h2>
+          <p>
+            Datos reales de mi Strava. Si voy a marcarte el ritmo el día de la carrera,
+            primero lo sostengo en el entrenamiento.
+          </p>
+        </div>
+        <div class="train-grid">
+          <div class="train reveal">
+            <span class="tag">Fondo</span>
+            <h3>Long Run — 20 km</h3>
+            <p>Reintegrándome al fondo largo: 20 km continuos construyendo la base aeróbica que sostiene todo lo demás.</p>
+            <div class="metrics">
+              <div><span>Distancia</span><b>20.0 km</b></div>
+              <div><span>Ritmo</span><b>4:40 /km</b></div>
+              <div><span>Tiempo</span><b>1:33:29</b></div>
+            </div>
+          </div>
+          <div class="train reveal">
+            <span class="tag">Velocidad</span>
+            <h3>12 × 200m — Intervalos</h3>
+            <p>Repeticiones cortas para afinar la velocidad: la más rápida a 2:40 /km y cerrando la sesión más fuerte que al empezar.</p>
+            <div class="metrics">
+              <div><span>Reps</span><b>12 × 200m</b></div>
+              <div><span>Mejor rep</span><b>2:40 /km</b></div>
+              <div><span>Promedio</span><b>2:57 /km</b></div>
+            </div>
+          </div>
+          <div class="train reveal">
+            <span class="tag">Umbral</span>
+            <h3>3000m Trial</h3>
+            <p>Test de 3000 metros en condiciones de calor intenso — la referencia que confirma el estado de forma actual.</p>
+            <div class="metrics">
+              <div><span>Distancia</span><b>3.0 km</b></div>
+              <div><span>Ritmo</span><b>3:41 /km</b></div>
+              <div><span>Tiempo</span><b>11:05</b></div>
+            </div>
+          </div>
+          <div class="train reveal">
+            <span class="tag">VO2max</span>
+            <h3>Fartlek — 12 repeticiones</h3>
+            <p>Cambios de ritmo sobre 10 km para enseñar al cuerpo a acelerar cansado: justo lo que hace falta al final de una carrera.</p>
+            <div class="metrics">
+              <div><span>Distancia</span><b>10.0 km</b></div>
+              <div><span>Ritmo medio</span><b>4:31 /km</b></div>
+              <div><span>Esfuerzo</span><b>Alto</b></div>
+            </div>
+          </div>
+        </div>
+        <div class="strava-cta reveal">
+          <a class="btn btn-strava" href="https://www.strava.com/athletes/145304552" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>
+            Sígueme en Strava
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ LOGROS / GALERÍA ============ -->
+    <section id="logros">
+      <div class="wrap">
+        <div class="sec-head reveal">
+          <span class="kicker">Logros</span>
+          <h2>Resultados en la calle</h2>
+          <p>Cada marca de esta lista empezó siendo una meta que parecía imposible.</p>
+        </div>
+        <div class="gallery">
+          <figure class="reveal">
+            <img src="assets/img/jose-carrera-mango.jpg" alt="Jose Vasquez compitiendo en el 10K de la Carrera del Mango con el dorsal 53" loading="lazy" width="960" height="1200">
+            <figcaption>Carrera del Mango 10K — 38:35 (3:49 /km)</figcaption>
+          </figure>
+          <figure class="reveal">
+            <img src="assets/img/jose-12x200.jpg" alt="Resumen del entrenamiento de intervalos de Jose Vasquez: 12 repeticiones de 200 metros" loading="lazy" width="1024" height="1536">
+            <figcaption>Sesión de velocidad — 12 × 200m</figcaption>
+          </figure>
+          <figure class="reveal">
+            <img src="assets/img/jose-pink.jpg" alt="Jose Vasquez corriendo por las calles de Santo Domingo durante un evento de Proyecto ELA RD" loading="lazy" width="1400" height="2100">
+            <figcaption>Corriendo con propósito — Proyecto ELA RD</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ CONTACTO ============ -->
+    <section id="contacto">
+      <div class="wrap">
+        <div class="contact-box reveal">
+          <span class="kicker">Contacto</span>
+          <h2>¿Rompemos tu marca juntos?</h2>
+          <p>
+            Cuéntame tu carrera, tu fecha y tu meta. Te respondo con la estrategia
+            y la disponibilidad. También me encuentras en Instagram y Strava.
+          </p>
+          <div class="contact-links">
+            <a class="btn btn-primary" href="https://wa.me/18094589751?text=Hola%20Jose%2C%20me%20interesa%20tu%20servicio%20de%20pacer" target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.511-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.884 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              WhatsApp: 809-458-9751
+            </a>
+            <a class="btn btn-ghost" href="https://www.instagram.com/jvasquez234" target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zm0 10.162a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+              @jvasquez234
+            </a>
+            <a class="btn btn-ghost" href="https://www.strava.com/athletes/145304552" target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>
+              Strava
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <p>© 2026 Jose Vasquez · Pacer y corredor · República Dominicana</p>
+      <p style="margin-top:6px;">
+        <a href="https://wa.me/18094589751">WhatsApp</a> ·
+        <a href="https://www.instagram.com/jvasquez234" target="_blank" rel="noopener">Instagram</a> ·
+        <a href="https://www.strava.com/athletes/145304552" target="_blank" rel="noopener">Strava</a>
+      </p>
+    </div>
+  </footer>
+
+  <a class="wa-float" href="https://wa.me/18094589751?text=Hola%20Jose%2C%20me%20interesa%20tu%20servicio%20de%20pacer" target="_blank" rel="noopener" aria-label="Escríbeme por WhatsApp">
+    <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.511-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.884 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+  </a>
+
+  <script>
+    // Menú móvil
+    const toggle = document.querySelector('.nav-toggle');
+    const menu = document.getElementById('menu');
+    toggle.addEventListener('click', () => {
+      const open = menu.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', open);
+    });
+    menu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+      menu.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+    }));
+
+    // Aparición al hacer scroll
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { threshold: 0.12 });
+    document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+  </script>
+</body>
+</html>
